@@ -26,24 +26,24 @@ body{font-family:'Raleway',sans-serif;background:var(--off-white);color:var(--te
 .lang-btn.active{background:var(--gold);color:var(--navy);font-weight:700}
 
 /* ===== AUTH OVERLAY ===== */
-#auth-overlay{position:fixed;inset:0;background:rgba(15,28,48,0.93);z-index:9999;display:flex;align-items:flex-start;justify-content:center;backdrop-filter:blur(6px);overflow-y:auto;padding:1.5rem 1rem}
+#auth-overlay{position:fixed;inset:0;background:rgba(15,28,48,0.93);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:1rem}
 #auth-overlay.hidden{display:none}
-.auth-box{background:var(--white);border-radius:6px;width:100%;max-width:450px;margin:0 auto;box-shadow:0 24px 80px rgba(0,0,0,0.5);overflow:hidden;border-top:4px solid var(--gold);flex-shrink:0}
-.auth-header{background:var(--navy);padding:1.2rem 2rem;text-align:center;position:relative}
+.auth-box{background:var(--white);border-radius:6px;width:100%;max-width:450px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.5);overflow:hidden;border-top:4px solid var(--gold)}
+.auth-header{background:var(--navy);padding:1.2rem 2rem;text-align:center;position:relative;flex-shrink:0}
 .auth-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--E),var(--gold),var(--G))}
 .auth-logo{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--white);letter-spacing:0.03em}
 .auth-logo span{color:var(--gold)}
 .auth-tagline{font-family:'Courier Prime',monospace;font-size:0.6rem;letter-spacing:0.22em;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-top:0.35rem}
-.auth-tabs{display:flex;border-bottom:1px solid var(--border)}
+.auth-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .auth-tab{flex:1;padding:0.9rem;text-align:center;cursor:pointer;font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-soft);border-bottom:3px solid transparent;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none}
 .auth-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
-.auth-body{padding:1.2rem}
+.auth-body{padding:1.5rem;overflow-y:auto;flex:1}
 .auth-panel{display:none}.auth-panel.active{display:block}
-.auth-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:400;color:var(--navy);margin-bottom:0.25rem}
-.auth-sub{font-size:0.75rem;color:var(--text-soft);margin-bottom:1rem;line-height:1.5}
-.auth-error{background:#fee2e2;border:1px solid #dc2626;color:#991b1b;padding:0.5rem 1rem;border-radius:3px;font-size:0.75rem;margin-bottom:0.8rem;display:none}
+.auth-title{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:400;color:var(--navy);margin-bottom:0.35rem}
+.auth-sub{font-size:0.78rem;color:var(--text-soft);margin-bottom:1.4rem;line-height:1.55}
+.auth-error{background:#fee2e2;border:1px solid #dc2626;color:#991b1b;padding:0.65rem 1rem;border-radius:3px;font-size:0.78rem;margin-bottom:1rem;display:none}
 .auth-error.visible{display:block}
-.auth-field{margin-bottom:0.6rem}
+.auth-field{margin-bottom:0.9rem}
 .auth-label{display:block;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-mid);margin-bottom:0.35rem}
 .auth-input{width:100%;padding:0.7rem 1rem;border:1.5px solid var(--border);border-radius:3px;font-family:'Raleway',sans-serif;font-size:0.88rem;color:var(--text-dark);background:var(--white);transition:border-color 0.2s;outline:none}
 .auth-input:focus{border-color:var(--navy)}
@@ -53,7 +53,7 @@ body{font-family:'Raleway',sans-serif;background:var(--off-white);color:var(--te
 .auth-guest{text-align:center;margin-top:1rem}
 .auth-guest button{background:none;border:none;cursor:pointer;font-size:0.75rem;color:var(--text-soft);text-decoration:underline;font-family:'Raleway',sans-serif}
 .auth-guest button:hover{color:var(--navy)}
-.auth-sector{display:grid;grid-template-columns:1fr 1fr;gap:0.35rem;margin-bottom:0.6rem}
+.auth-sector{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.9rem}
 .sector-btn{padding:0.55rem;border:1.5px solid var(--border);border-radius:3px;background:transparent;cursor:pointer;font-family:'Raleway',sans-serif;font-size:0.72rem;font-weight:600;color:var(--text-mid);transition:all 0.15s;text-align:center}
 .sector-btn:hover{border-color:var(--navy);color:var(--navy)}
 .sector-btn.selected{background:var(--navy);border-color:var(--navy);color:var(--white)}
