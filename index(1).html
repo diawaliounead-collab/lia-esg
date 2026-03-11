@@ -29,15 +29,19 @@ body{font-family:'Raleway',sans-serif;background:var(--off-white);color:var(--te
 #auth-overlay{position:fixed;inset:0;background:rgba(15,28,48,0.93);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:1rem}
 #auth-overlay.hidden{display:none}
 .auth-box{background:var(--white);border-radius:6px;width:100%;max-width:450px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.5);overflow:hidden;border-top:4px solid var(--gold)}
-.auth-header{background:var(--navy);padding:1.2rem 2rem;text-align:center;position:relative;flex-shrink:0}
+.auth-header{background:var(--navy);padding:1rem 2rem;text-align:center;position:relative;flex-shrink:0}
 .auth-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--E),var(--gold),var(--G))}
 .auth-logo{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--white);letter-spacing:0.03em}
 .auth-logo span{color:var(--gold)}
 .auth-tagline{font-family:'Courier Prime',monospace;font-size:0.6rem;letter-spacing:0.22em;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-top:0.35rem}
+.auth-lang-switch{display:flex;justify-content:center;gap:0.4rem;margin-top:0.8rem}
+.auth-lang-btn{background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);padding:0.3rem 0.9rem;border-radius:3px;font-family:'Courier Prime',monospace;font-size:0.7rem;font-weight:700;letter-spacing:0.12em;cursor:pointer;transition:all 0.2s;text-transform:uppercase}
+.auth-lang-btn:hover{background:rgba(255,255,255,0.15);color:var(--white)}
+.auth-lang-btn.active{background:var(--gold);border-color:var(--gold);color:var(--navy)}
 .auth-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .auth-tab{flex:1;padding:0.9rem;text-align:center;cursor:pointer;font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-soft);border-bottom:3px solid transparent;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none}
 .auth-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
-.auth-body{padding:1.5rem;overflow-y:auto;flex:1}
+.auth-body{padding:1.2rem 1.5rem;overflow-y:auto;flex:1}
 .auth-panel{display:none}.auth-panel.active{display:block}
 .auth-title{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:400;color:var(--navy);margin-bottom:0.35rem}
 .auth-sub{font-size:0.78rem;color:var(--text-soft);margin-bottom:1.4rem;line-height:1.55}
@@ -454,6 +458,10 @@ table.rm-tbl tr:hover td{background:#fdfcfa}
     <div class="auth-header">
       <div class="auth-logo">Aurore<span>AD</span></div>
       <div class="auth-tagline">LIA' · ESG Impact Score™</div>
+      <div class="auth-lang-switch">
+        <button class="auth-lang-btn" id="auth-lang-en" onclick="setAuthLang('en')">🇬🇧 EN</button>
+        <button class="auth-lang-btn active" id="auth-lang-fr" onclick="setAuthLang('fr')">🇫🇷 FR</button>
+      </div>
     </div>
     <div class="auth-tabs">
       <button class="auth-tab" id="atab-login" onclick="switchAuthTab('login')" data-en="Sign in" data-fr="Se connecter">Sign in</button>
@@ -881,7 +889,7 @@ table.rm-tbl tr:hover td{background:#fdfcfa}
 
 <script>
 // ===== LANGUAGE SYSTEM =====
-let lang = 'en';
+let lang = 'fr';
 function setLang(l) {
   lang = l;
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
@@ -919,6 +927,23 @@ function selectSector(btn) {
   document.querySelectorAll('.sector-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedSector = btn.getAttribute('data-val');
+}
+
+function setAuthLang(l) {
+  lang = l;
+  document.getElementById('auth-lang-en').classList.toggle('active', l==='en');
+  document.getElementById('auth-lang-fr').classList.toggle('active', l==='fr');
+  document.getElementById('html-root').lang = l;
+  // Update all data-en/data-fr elements
+  document.querySelectorAll('[data-en]').forEach(el => {
+    if(el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') el.textContent = l==='fr' ? (el.dataset.fr||el.dataset.en) : el.dataset.en;
+  });
+  // Update placeholders
+  document.querySelectorAll('[data-ph-fr]').forEach(el => {
+    el.placeholder = l==='fr' ? el.dataset.phFr : el.dataset.phEn;
+  });
+  // Sync with main lang buttons
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang===l));
 }
 
 function switchAuthTab(tab) {
@@ -1067,28 +1092,82 @@ function renderHistory(scores) {
 
 function renderFinanceTab(scores) {
   const lastScore = scores.length ? scores[scores.length-1].total : 0;
+  const lastSE = scores.length ? scores[scores.length-1].sE : 0;
+  const lastSS = scores.length ? scores[scores.length-1].sS : 0;
+  const lastSG = scores.length ? scores[scores.length-1].sG : 0;
   const hasScore = scores.length > 0;
   const lv = LEVELS.find(l => lastScore <= l.max) || LEVELS[0];
+  const sector = getActiveSector();
+
+  // Benchmark sectoriel (scores moyens observés)
+  const SECTOR_BENCHMARK = {
+    retail:       { avg:28, leaders:44, label_en:'Retail / Commerce',      label_fr:'Commerce / Retail' },
+    food:         { avg:24, leaders:40, label_en:'Food & Restaurant',       label_fr:'Restauration / Alimentation' },
+    services:     { avg:32, leaders:48, label_en:'Services / Consulting',   label_fr:'Services / Conseil' },
+    construction: { avg:22, leaders:38, label_en:'Construction / Crafts',   label_fr:'BTP / Artisanat' },
+    health:       { avg:30, leaders:46, label_en:'Health / Wellness',       label_fr:'Santé / Bien-être' },
+    tech:         { avg:36, leaders:52, label_en:'Tech / Digital',          label_fr:'Tech / Numérique' },
+    industry:     { avg:26, leaders:42, label_en:'Industry / Manufacturing',label_fr:'Industrie / Production' },
+    other:        { avg:28, leaders:44, label_en:'General',                 label_fr:'Général' },
+  };
+  const bm = SECTOR_BENCHMARK[sector] || SECTOR_BENCHMARK['other'];
 
   const FINANCE = {
     taxCredits: [
-      { name: t('R&D Tax Credit (CIR)','Crédit Impôt Recherche (CIR)'), desc: t('Up to 30% of innovation expenses refunded. Available to any independent SME investing in innovation.','Jusqu\'à 30% des dépenses d\'innovation remboursées. Disponible pour toute PME indépendante investissant dans l\'innovation.'), amount: t('Up to 30% of qualifying spend','Jusqu\'à 30% des dépenses éligibles'), min: 0, type: 'fiscal' },
-      { name: t('Green Investment Tax Credit','Crédit d\'Impôt Investissement Vert'), desc: t('Tax credit for investments in energy-efficient equipment, renewable energy, and sustainable infrastructure.','Crédit d\'impôt pour les investissements en équipements économes en énergie, énergies renouvelables, et infrastructures durables.'), amount: t('15–40% of investment','15–40% de l\'investissement'), min: 15, type: 'fiscal' },
-      { name: t('Training Tax Credit','Crédit Impôt Formation'), desc: t('Tax credit for employee training hours invested by the manager. Particularly accessible to micro-businesses.','Crédit d\'impôt pour les heures de formation des dirigeants. Particulièrement accessible aux TPE.'), amount: t('€18.38–24.63/hr of training','18,38–24,63€/h de formation'), min: 0, type: 'fiscal' },
+      { name: t('Training Tax Credit (Crédit Impôt Formation)','Crédit Impôt Formation dirigeant'),
+        desc: t('Tax credit for manager training hours. €18.38/hr for businesses with employees, €24.63/hr for micro-businesses (under 10 staff). File via Form 2069-A with your annual tax return. Applies retroactively for 3 years.','Crédit d\'impôt pour les heures de formation du dirigeant. 18,38€/h avec salariés, 24,63€/h pour moins de 10 salariés. Déclarez via formulaire 2069-A avec votre liasse fiscale. Rétroactif sur 3 ans.'),
+        amount: t('€18.38–24.63/hr · no upper limit','18,38–24,63€/h · sans plafond'), min: 0, type: 'fiscal', priority: 'high' },
+      { name: t('Innovation Tax Credit (CII) — 20%','Crédit d\'Impôt Innovation (CII) — 20%'),
+        desc: t('20% of eligible innovation expenses reimbursed (prototypes, new products/processes). Max €400,000/yr of eligible spend = up to €80,000 cash back. For independent SMEs only. File Form 2069-A. Can be claimed retroactively for 3 years.','20% des dépenses d\'innovation remboursées (prototypes, nouveaux produits/procédés). Plafond 400 000€/an = jusqu\'à 80 000€ de retour cash. PME indépendantes uniquement. Formulaire 2069-A. Rétroactif 3 ans.'),
+        amount: t('Up to €80,000 cash back per year','Jusqu\'à 80 000€/an en retour cash'), min: 15, type: 'fiscal', priority: 'high' },
+      { name: t('R&D Tax Credit (CIR) — 30%','Crédit d\'Impôt Recherche (CIR) — 30%'),
+        desc: t('30% of qualifying R&D expenditure reimbursed — no upper limit. Eligible: researcher salaries, patents, subcontracted R&D. Average SME claim: €50,000–500,000. File Form 2069-A. Consult a CIR specialist for maximum recovery.','30% des dépenses R&D remboursées — sans plafond supérieur. Éligibles : salaires chercheurs, brevets, R&D sous-traitée. Déclaration moyenne PME : 50 000–500 000€. Formulaire 2069-A. Consultez un spécialiste CIR.'),
+        amount: t('30% of R&D spend — no upper limit','30% des dépenses R&D — sans plafond'), min: 35, type: 'fiscal', priority: 'high' },
+      { name: t('Reduced VAT 5.5% on Energy Works','TVA réduite 5,5% sur travaux énergétiques'),
+        desc: t('5.5% VAT instead of 20% on all energy improvement works (insulation, heating, solar). Applies to premises over 2 years old. Saving: €1,450 per €10,000 of works. Automatic — just inform your RGE-certified contractor.','TVA à 5,5% au lieu de 20% sur tous travaux d\'amélioration énergétique. Locaux > 2 ans. Économie : 1 450€ par 10 000€ de travaux. Automatique — informez simplement votre artisan certifié RGE.'),
+        amount: t('€1,450 saved per €10,000 of energy works','1 450€ économisés par 10 000€ de travaux énergétiques'), min: 20, type: 'fiscal', priority: 'high' },
     ],
     grants: [
-      { name: t('ADEME SME Ecological Bonus','Bonus Écologique PME ADEME'), desc: t('French government subsidy for ecological transition: equipment, energy audit, green renovation. Up to 70% subsidy rate for micro-businesses.','Subvention de l\'État pour la transition écologique : équipements, audit énergétique, rénovation verte. Jusqu\'à 70% de subvention pour les TPE.'), amount: t('€5,000–200,000','5 000€–200 000€'), min: 5, type: 'grant' },
-      { name: t('BPI France Green Loan','Prêt Vert BPI France'), desc: t('Zero-interest or low-rate loan for ecological investments. Accessible to any French SME with a documented transition project.','Prêt à taux zéro ou réduit pour les investissements écologiques. Accessible à toute PME française avec un projet de transition documenté.'), amount: t('€50,000–5M','50 000€–5M'), min: 30, type: 'financing' },
-      { name: t('EU ERDF/ESF+ Structural Funds','Fonds structurels européens FEDER/FSE+'), desc: t('European co-financing for digital and ecological transition. Via regional authorities. Requires ESG documentation.','Co-financement européen pour la transition numérique et écologique. Via les autorités régionales. Nécessite une documentation ESG.'), amount: t('40–80% co-financing','Co-financement 40–80%'), min: 40, type: 'eu' },
+      { name: t('CEE — Energy Savings Certificates','CEE — Certificats d\'Économies d\'Énergie'),
+        desc: t('Legal obligation on energy suppliers to fund your renovations. LED: €500–3,000 · Insulation: €3,000–15,000 · Boiler upgrade: €2,000–8,000. Contact EDF, Engie or a CEE broker directly. Zero paperwork on your side.','Obligation légale des fournisseurs d\'énergie de financer vos rénovations. LED : 500–3 000€ · Isolation : 3 000–15 000€ · Chaudière : 2 000–8 000€. Contactez EDF, Engie ou un courtier CEE directement. Démarche côté fournisseur.'),
+        amount: t('€500–15,000 depending on works','500–15 000€ selon travaux'), min: 0, type: 'grant', priority: 'high' },
+      { name: t('Apprenticeship Grant — €6,000','Prime apprentissage — 6 000€'),
+        desc: t('€6,000 direct grant for hiring an apprentice (companies under 250 employees). Paid in 2 instalments: €3,000 at 6 months, €3,000 at 12 months. File on alternance.emploi.gouv.fr within 5 days of contract signing.','6 000€ de prime directe pour l\'embauche d\'un apprenti (< 250 salariés). Versé en 2 fois : 3 000€ à 6 mois, 3 000€ à 12 mois. Dossier sur alternance.emploi.gouv.fr dans les 5 jours du contrat.'),
+        amount: t('€6,000 per apprentice (2 instalments)','6 000€ par apprenti (2 versements)'), min: 5, type: 'grant', priority: 'high' },
+      { name: t('MaPrimeRénov\' Pro — Up to €25,000','MaPrimeRénov\' Pro — jusqu\'à 25 000€'),
+        desc: t('State grant for commercial premises renovation: insulation, heating, ventilation. Up to 50% of works for SMEs. Maximum €25,000. Requires a certified RGE contractor. Apply on maprimerenov.gouv.fr. Processing: 2–4 months.','Subvention État pour rénovation locaux professionnels. Jusqu\'à 50% des travaux pour les PME. Plafond 25 000€. Artisan RGE obligatoire. Dossier sur maprimerenov.gouv.fr. Délai : 2–4 mois.'),
+        amount: t('Up to 50% of works · max €25,000','Jusqu\'à 50% des travaux · plafond 25 000€'), min: 10, type: 'grant', priority: 'high' },
+      { name: t('CARSAT Safety Grant — €25,000','Subvention CARSAT Prévention — 25 000€'),
+        desc: t('Grant of 50–70% for workplace health & safety improvements. Max €25,000. Requires an updated DUER (Risk Assessment Document). Sectors: construction, food, industry, health. Apply on net-entreprises.fr or contact your CARSAT directly.','50–70% pour amélioration santé & sécurité au travail. Plafond 25 000€. DUER à jour obligatoire. Secteurs : BTP, alimentaire, industrie, santé. Dossier sur net-entreprises.fr ou contactez votre CARSAT.'),
+        amount: t('50–70% of works · max €25,000','50–70% des travaux · plafond 25 000€'), min: 15, type: 'grant', priority: 'high' },
+      { name: t('ADEME Ecological Transition — up to €200K','ADEME Transition Écologique — jusqu\'à 200K€'),
+        desc: t('ADEME funds ecological investments: equipment (up to 70% for micro-businesses), energy audit, green renovation. Scale: €5,000–200,000. Micro-businesses get highest rates. Apply on ademe.fr/aides-financieres. Processing: 3–6 months.','L\'ADEME finance les investissements écologiques : équipements (jusqu\'à 70% pour TPE), audit énergétique, rénovation. Échelle : 5 000–200 000€. Les TPE bénéficient des taux les plus élevés. Dossier sur ademe.fr. Délai : 3–6 mois.'),
+        amount: t('€5,000–200,000 · up to 70% for micro-biz','5 000–200 000€ · jusqu\'à 70% pour les TPE'), min: 25, type: 'grant', priority: 'high' },
+      { name: t('EU Structural Funds (ERDF/ESF+)','Fonds européens FEDER/FSE+'),
+        desc: t('EU co-financing 40–80% for digital and ecological transition. Via regional councils. Requires ESG documentation + 3-year project plan. Typical amounts: €20,000–500,000. Contact your regional BPI or CCI to identify open calls.','Co-financement UE 40–80% pour transitions numérique et écologique. Via Conseils Régionaux. Documentation ESG + plan 3 ans requis. Montants typiques : 20 000–500 000€. Contactez votre BPI ou CCI régionale.'),
+        amount: t('40–80% co-financing · €20,000–500,000','Co-financement 40–80% · 20 000–500 000€'), min: 40, type: 'grant', priority: 'med' },
     ],
     banking: [
-      { name: t('ESG-linked Loan Rate Reduction','Réduction de taux liée à l\'ESG'), desc: t('Several banks (Crédit Agricole, BNP, Société Générale) offer rate reductions of 0.25–2% for borrowers with certified ESG practices.','Plusieurs banques (Crédit Agricole, BNP, SG) offrent des réductions de taux de 0,25–2% pour les emprunteurs avec des pratiques ESG certifiées.'), amount: t('−0.25% to −2% on rate','−0,25% à −2% sur le taux'), min: 20, type: 'banking' },
+      { name: t('ESG-Linked Rate Reduction','Réduction de taux liée à l\'ESG'),
+        desc: t('Crédit Agricole, BNP Paribas, Société Générale, Banque Populaire: rate cuts of 0.25–2% for documented ESG practices. Example: on a €200,000 loan over 7 years, saving of €3,500–28,000. Ask specifically for a "prêt vert" or "crédit ESG" from your banker.','Crédit Agricole, BNP, SG, Banque Populaire : baisses de taux de 0,25–2% avec pratiques ESG documentées. Exemple : sur 200 000€ sur 7 ans, économie de 3 500–28 000€. Demandez explicitement un "prêt vert" ou "crédit ESG" à votre banquier.'),
+        amount: t('−0.25% to −2% · €3,500–28,000 saved on €200K/7yr','−0,25% à −2% · 3 500–28 000€ économisés sur 200K€/7ans'), min: 20, type: 'banking', priority: 'high' },
+      { name: t('BPI France Green Loan — from €50,000','Prêt Vert BPI France — à partir de 50 000€'),
+        desc: t('Unsecured loan at subsidised rate: 3.5–4.5% vs. 6–7% market rate. Amounts: €50,000–5M. Repayment: 3–7 years. Requires a documented ecological transition project. Apply directly on bpifrance.fr/nos-solutions or via your bank.','Prêt sans garantie à taux bonifié : 3,5–4,5% vs 6–7% taux marché. Montants : 50 000€–5M€. Durée : 3–7 ans. Projet de transition écologique documenté requis. Dossier sur bpifrance.fr ou via votre banque.'),
+        amount: t('€50K–5M at 3.5–4.5% (market: 6–7%)','50K€–5M à 3,5–4,5% (marché : 6–7%)'), min: 30, type: 'banking', priority: 'high' },
+    ],
+    labels: [
+      { name: t('Lucie / Engagé RSE Label','Label Lucie / Engagé RSE'),
+        desc: t('Official CSR certification (ISO 26000 framework). Cost: €3,000–8,000. Benefits: unlocks public procurement with CSR criteria, improves bank credit rating, reduces insurance by 5–15%. ROI typically under 18 months. Apply on labellucie.com or afnor.org.','Certification RSE officielle (référentiel ISO 26000). Coût : 3 000–8 000€. Bénéfices : marchés publics RSE, amélioration notation bancaire, réduction assurances 5–15%. ROI généralement < 18 mois. Dossier sur labellucie.com ou afnor.org.'),
+        amount: t('Unlocks public contracts + 5–15% insurance reduction','Ouvre marchés publics + 5–15% réduction assurance'), min: 45, type: 'label', priority: 'high' },
+      { name: t('Public Procurement — CSR Award Criteria','Marchés publics — Critère RSE'),
+        desc: t('Since 2021, all public contracts above €40,000 must include ESG criteria. With a score of 50+, you qualify for 85% of public tenders. Average public contract value: €120,000/year. Contact your CCI or consult BOAMP.fr for active tenders.','Depuis 2021, tous marchés publics > 40 000€ incluent des critères ESG. Avec un score 50+, vous êtes qualifié pour 85% des appels d\'offres. Valeur moyenne : 120 000€/an. Consultez BOAMP.fr ou contactez votre CCI pour les appels en cours.'),
+        amount: t('Eligible for 85% of public tenders — avg €120K/yr','Éligible à 85% des AO — valeur moy. 120K€/an'), min: 50, type: 'label', priority: 'high' },
     ]
   };
 
-  const allItems = [...FINANCE.taxCredits, ...FINANCE.grants, ...FINANCE.banking];
-  const eligible = allItems.filter(i => !hasScore || lastScore >= i.min);
-  const upcoming = allItems.filter(i => hasScore && lastScore < i.min).slice(0,3);
+  const allItems = [...FINANCE.taxCredits, ...FINANCE.grants, ...FINANCE.banking, ...FINANCE.labels];
+  const eligible = allItems.filter(i => lastScore >= i.min);
+  const upcoming = allItems.filter(i => hasScore && lastScore < i.min).slice(0,4);
 
   let html = '';
   if (!hasScore) {
@@ -1097,42 +1176,145 @@ function renderFinanceTab(scores) {
       <div class="finance-body"><p style="color:var(--text-soft);font-size:0.85rem;padding:1rem 0">${t('Once you run your first ESG diagnostic, this tab will show you all the tax credits, grants and financial advantages you are eligible for based on your score.','Une fois votre premier diagnostic ESG réalisé, cet onglet vous montrera tous les crédits d\'impôt, aides et avantages financiers auxquels vous êtes éligible selon votre score.')}</p>
       <button class="btn-dash-new" onclick="startNewDiagnostic()">${t('+ Start my first diagnostic','+ Lancer mon premier diagnostic')}</button></div></div>`;
   } else {
-    html = `<div style="margin-bottom:1rem;padding:1rem 1.25rem;background:${lv.color}18;border:1px solid ${lv.color}44;border-left:4px solid ${lv.color};border-radius:3px;font-size:0.82rem;color:var(--text-dark);line-height:1.6">
-      <strong>${t('Your current score: ','Votre score actuel : ')} ${lastScore}/60 — ${lv.tag}</strong><br>
-      ${t('Based on this score, you are eligible for the following financial benefits. For a fully personalised analysis, book a consultation with AuroreAD.','Sur la base de ce score, vous êtes éligible aux avantages financiers suivants. Pour une analyse entièrement personnalisée, prenez rendez-vous avec AuroreAD.')}
+
+    // ===== BENCHMARK SECTORIEL =====
+    const myPct = Math.round((lastScore/60)*100);
+    const avgPct = Math.round((bm.avg/60)*100);
+    const leadPct = Math.round((bm.leaders/60)*100);
+    html += `<div style="background:var(--navy-deep);border-radius:var(--radius);padding:1.2rem 1.4rem;margin-bottom:1.2rem">
+      <div style="font-family:'Courier Prime',monospace;font-size:0.6rem;letter-spacing:0.15em;color:var(--gold);text-transform:uppercase;margin-bottom:0.8rem">📊 ${t('Benchmark — ','Benchmark — ')}${lang==='fr'?bm.label_fr:bm.label_en}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin-bottom:0.8rem">
+        <div style="text-align:center">
+          <div style="font-family:'Playfair Display',serif;font-size:1.6rem;color:${lv.color};font-weight:400">${lastScore}</div>
+          <div style="font-size:0.62rem;color:rgba(255,255,255,0.45);font-family:'Courier Prime',monospace;text-transform:uppercase;letter-spacing:0.1em">${t('You','Vous')}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Playfair Display',serif;font-size:1.6rem;color:rgba(255,255,255,0.5);font-weight:400">${bm.avg}</div>
+          <div style="font-size:0.62rem;color:rgba(255,255,255,0.45);font-family:'Courier Prime',monospace;text-transform:uppercase;letter-spacing:0.1em">${t('Sector avg','Moy. secteur')}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--gold);font-weight:400">${bm.leaders}</div>
+          <div style="font-size:0.62rem;color:rgba(255,255,255,0.45);font-family:'Courier Prime',monospace;text-transform:uppercase;letter-spacing:0.1em">${t('Top 10%','Top 10%')}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.4rem">
+        <div style="display:flex;align-items:center;gap:0.6rem">
+          <div style="font-size:0.65rem;color:${lv.color};width:55px;text-align:right;font-family:'Courier Prime',monospace">${t('You','Vous')}</div>
+          <div style="flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:10px;overflow:hidden"><div style="height:100%;width:${myPct}%;background:${lv.color};border-radius:10px"></div></div>
+          <div style="font-size:0.62rem;color:rgba(255,255,255,0.4);font-family:'Courier Prime',monospace;width:30px">${myPct}%</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.6rem">
+          <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);width:55px;text-align:right;font-family:'Courier Prime',monospace">${t('Avg','Moy.')}</div>
+          <div style="flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:10px;overflow:hidden"><div style="height:100%;width:${avgPct}%;background:rgba(255,255,255,0.3);border-radius:10px"></div></div>
+          <div style="font-size:0.62rem;color:rgba(255,255,255,0.4);font-family:'Courier Prime',monospace;width:30px">${avgPct}%</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.6rem">
+          <div style="font-size:0.65rem;color:var(--gold);width:55px;text-align:right;font-family:'Courier Prime',monospace">${t('Top','Top')}</div>
+          <div style="flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:10px;overflow:hidden"><div style="height:100%;width:${leadPct}%;background:var(--gold);border-radius:10px"></div></div>
+          <div style="font-size:0.62rem;color:rgba(255,255,255,0.4);font-family:'Courier Prime',monospace;width:30px">${leadPct}%</div>
+        </div>
+      </div>
+      ${lastScore < bm.avg ? `<div style="margin-top:0.8rem;font-size:0.75rem;color:rgba(255,165,0,0.85);background:rgba(255,165,0,0.08);padding:0.5rem 0.8rem;border-radius:3px;border-left:3px solid orange">⚠️ ${t('You are below sector average. The recommendations below will help you close this gap and unlock more financial benefits.','Vous êtes en dessous de la moyenne de votre secteur. Les recommandations ci-dessous vous aideront à combler cet écart et débloquer davantage d\'avantages financiers.')}</div>` 
+      : `<div style="margin-top:0.8rem;font-size:0.75rem;color:rgba(100,220,100,0.85);background:rgba(100,220,100,0.08);padding:0.5rem 0.8rem;border-radius:3px;border-left:3px solid #2d6a4f">✅ ${t('You are above sector average. Keep improving to reach the top 10% and unlock the most selective financing.','Vous êtes au-dessus de la moyenne sectorielle. Continuez à progresser pour atteindre le top 10% et débloquer les financements les plus sélectifs.')}</div>`}
     </div>`;
 
-    html += `<div class="finance-section"><div class="finance-header"><span>🏛️</span><h3>${t('Tax Credits & Fiscal Advantages','Crédits d\'Impôt & Avantages Fiscaux')}</h3></div><div class="finance-body"><div class="finance-grid">`;
-    FINANCE.taxCredits.filter(i => lastScore >= i.min).forEach(i => {
-      html += `<div class="finance-item"><div class="finance-item-type" style="color:var(--gold)">${t('TAX CREDIT','CRÉDIT D\'IMPÔT')}</div><h4>${i.name}</h4><p>${i.desc}</p><div class="finance-amount">💰 ${i.amount}</div></div>`;
-    });
-    html += `</div><div class="finance-cta"><p>${t('Want to know exactly how much you can claim? Our experts calculate the precise amounts for your situation.','Vous voulez savoir exactement combien vous pouvez récupérer ? Nos experts calculent les montants précis pour votre situation.')}</p><a href="https://auroreadconsult.com/contact" class="btn-contact-small" target="_blank">${t('Get a free estimate','Obtenir une estimation gratuite')}</a></div></div></div>`;
+    // ===== SCORE CONTEXT =====
+    html += `<div style="margin-bottom:1rem;padding:1rem 1.25rem;background:${lv.color}18;border:1px solid ${lv.color}44;border-left:4px solid ${lv.color};border-radius:3px;font-size:0.82rem;color:var(--text-dark);line-height:1.6">
+      <strong>${t('Your score: ','Votre score : ')}${lastScore}/60 — E:${lastSE} · S:${lastSS} · G:${lastSG}</strong><br>
+      ${t('Based on this score, here are all the financial benefits you are eligible for — with exact amounts, rates, and direct application links.','Sur la base de ce score, voici tous les avantages financiers auxquels vous êtes éligible — avec montants exacts, taux précis et liens de dépôt directs.')}
+    </div>`;
 
-    html += `<div class="finance-section"><div class="finance-header"><span>🎯</span><h3>${t('Grants & Public Financing','Subventions & Financements Publics')}</h3></div><div class="finance-body"><div class="finance-grid">`;
-    FINANCE.grants.filter(i => lastScore >= i.min).forEach(i => {
-      html += `<div class="finance-item"><div class="finance-item-type" style="color:var(--E)">${t('GRANT','SUBVENTION')}</div><h4>${i.name}</h4><p>${i.desc}</p><div class="finance-amount">📊 ${i.amount}</div></div>`;
-    });
-    if (!FINANCE.grants.filter(i => lastScore >= i.min).length) {
-      html += `<div style="grid-column:1/-1;font-size:0.8rem;color:var(--text-soft);font-style:italic;padding:0.5rem 0">${t('Improve your score to unlock grants. At 30+, BPI France Green Loan becomes available.','Améliorez votre score pour débloquer des subventions. À partir de 30, le Prêt Vert BPI France devient accessible.')}</div>`;
+    // Helper function for priority badge
+    const priorityBadge = (p) => p === 'high' 
+      ? `<span style="background:#d1fae5;color:#065f46;font-size:0.55rem;font-family:'Courier Prime',monospace;letter-spacing:0.1em;padding:0.15rem 0.45rem;border-radius:2px;text-transform:uppercase;font-weight:700">${t('HIGH IMPACT','FORT IMPACT')}</span>`
+      : `<span style="background:#fef3c7;color:#92400e;font-size:0.55rem;font-family:'Courier Prime',monospace;letter-spacing:0.1em;padding:0.15rem 0.45rem;border-radius:2px;text-transform:uppercase;font-weight:700">${t('MEDIUM IMPACT','IMPACT MOYEN')}</span>`;
+
+    // ===== TAX CREDITS =====
+    const eligibleTax = FINANCE.taxCredits.filter(i => lastScore >= i.min);
+    if (eligibleTax.length) {
+      html += `<div class="finance-section"><div class="finance-header"><span>🏛️</span><h3>${t('Tax Credits & Fiscal Advantages','Crédits d\'Impôt & Avantages Fiscaux')}</h3></div><div class="finance-body"><div class="finance-grid">`;
+      eligibleTax.forEach(i => {
+        html += `<div class="finance-item">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+            <div class="finance-item-type" style="color:var(--gold)">${t('TAX CREDIT','CRÉDIT D\'IMPÔT')}</div>
+            ${priorityBadge(i.priority)}
+          </div>
+          <h4>${i.name}</h4><p>${i.desc}</p>
+          <div class="finance-amount">💰 ${i.amount}</div>
+        </div>`;
+      });
+      html += `</div><div class="finance-cta"><p>${t('Want the exact calculation for your situation? Our experts handle the full CIR/CII/CIF file for you.','Vous voulez le calcul exact pour votre situation ? Nos experts montent le dossier CIR/CII/CIF complet pour vous.')}</p><a href="https://auroreadconsult.com/contact" class="btn-contact-small" target="_blank">${t('Get a free estimate →','Obtenir une estimation gratuite →')}</a></div></div></div>`;
     }
-    html += `</div><div class="finance-cta"><p>${t('For personalised file preparation and grant applications, our team handles everything.','Pour la préparation personnalisée de dossiers et demandes de subventions, notre équipe gère tout.')}</p><a href="https://auroreadconsult.com/contact" class="btn-contact-small" target="_blank">${t('Book a consultation','Prendre rendez-vous')}</a></div></div></div>`;
 
-    html += `<div class="finance-section"><div class="finance-header"><span>🏦</span><h3>${t('Banking & ESG-linked Rates','Taux Bancaires liés à l\'ESG')}</h3></div><div class="finance-body"><div class="finance-grid">`;
-    FINANCE.banking.filter(i => lastScore >= i.min).forEach(i => {
-      html += `<div class="finance-item"><div class="finance-item-type" style="color:var(--S)">${t('BANKING','BANCAIRE')}</div><h4>${i.name}</h4><p>${i.desc}</p><div class="finance-amount">📉 ${i.amount}</div></div>`;
-    });
-    if (!FINANCE.banking.filter(i => lastScore >= i.min).length) {
-      html += `<div style="grid-column:1/-1;font-size:0.8rem;color:var(--text-soft);font-style:italic;padding:0.5rem 0">${t('Reach a score of 20+ to begin accessing ESG-linked banking rates.','Atteignez un score de 20+ pour commencer à accéder aux taux bancaires liés à l\'ESG.')}</div>`;
+    // ===== GRANTS =====
+    const eligibleGrants = FINANCE.grants.filter(i => lastScore >= i.min);
+    if (eligibleGrants.length) {
+      html += `<div class="finance-section"><div class="finance-header"><span>🎯</span><h3>${t('Grants & Public Subsidies','Subventions & Aides Publiques')}</h3></div><div class="finance-body"><div class="finance-grid">`;
+      eligibleGrants.forEach(i => {
+        html += `<div class="finance-item">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+            <div class="finance-item-type" style="color:var(--E)">${t('GRANT','SUBVENTION')}</div>
+            ${priorityBadge(i.priority)}
+          </div>
+          <h4>${i.name}</h4><p>${i.desc}</p>
+          <div class="finance-amount">📊 ${i.amount}</div>
+        </div>`;
+      });
+      html += `</div><div class="finance-cta"><p>${t('Our team prepares and submits your grant files. We only charge a success fee.','Notre équipe prépare et dépose vos dossiers de subvention. Honoraires uniquement au succès.')}</p><a href="https://auroreadconsult.com/contact" class="btn-contact-small" target="_blank">${t('Book a consultation →','Prendre rendez-vous →')}</a></div></div></div>`;
     }
-    html += `</div></div></div>`;
 
+    // ===== BANKING =====
+    const eligibleBank = FINANCE.banking.filter(i => lastScore >= i.min);
+    if (eligibleBank.length) {
+      html += `<div class="finance-section"><div class="finance-header"><span>🏦</span><h3>${t('Green Loans & ESG-Linked Rates','Prêts Verts & Taux Bonifiés ESG')}</h3></div><div class="finance-body"><div class="finance-grid">`;
+      eligibleBank.forEach(i => {
+        html += `<div class="finance-item">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+            <div class="finance-item-type" style="color:var(--S)">${t('BANKING','BANCAIRE')}</div>
+            ${priorityBadge(i.priority)}
+          </div>
+          <h4>${i.name}</h4><p>${i.desc}</p>
+          <div class="finance-amount">📉 ${i.amount}</div>
+        </div>`;
+      });
+      html += `</div></div></div>`;
+    }
+
+    // ===== LABELS & MARKETS =====
+    const eligibleLabels = FINANCE.labels.filter(i => lastScore >= i.min);
+    if (eligibleLabels.length) {
+      html += `<div class="finance-section"><div class="finance-header"><span>🌱</span><h3>${t('Certifications & Market Access','Certifications & Accès Marchés')}</h3></div><div class="finance-body"><div class="finance-grid">`;
+      eligibleLabels.forEach(i => {
+        html += `<div class="finance-item">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+            <div class="finance-item-type" style="color:var(--G)">${t('LABEL / MARKET','LABEL / MARCHÉ')}</div>
+            ${priorityBadge(i.priority)}
+          </div>
+          <h4>${i.name}</h4><p>${i.desc}</p>
+          <div class="finance-amount">🏆 ${i.amount}</div>
+        </div>`;
+      });
+      html += `</div></div></div>`;
+    }
+
+    // ===== UPCOMING =====
     if (upcoming.length) {
-      html += `<div style="padding:1.2rem;background:var(--off-white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem"><div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--navy);margin-bottom:0.8rem">🔓 ${t('Unlock with a higher score:','Débloquez avec un score plus élevé:')}</div><div style="display:flex;flex-direction:column;gap:0.5rem">`;
+      html += `<div style="padding:1.2rem;background:var(--off-white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem">
+        <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--navy);margin-bottom:0.8rem">🔓 ${t('Unlock with a higher score:','Débloquez avec un score plus élevé :')}</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem">`;
       upcoming.forEach(i => {
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0.9rem;background:var(--white);border:1px solid var(--border);border-radius:3px;font-size:0.78rem"><span style="color:var(--text-mid)">${i.name}</span><span style="font-family:'Courier Prime',monospace;font-size:0.62rem;color:var(--text-soft)">${t('From','À partir de')} ${i.min} pts</span></div>`;
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0.9rem;background:var(--white);border:1px solid var(--border);border-radius:3px;font-size:0.78rem">
+          <span style="color:var(--text-mid)">${i.name}</span>
+          <span style="font-family:'Courier Prime',monospace;font-size:0.62rem;color:var(--text-soft);white-space:nowrap;margin-left:0.5rem">${t('From','À partir de')} ${i.min} pts · ${i.amount}</span>
+        </div>`;
       });
       html += `</div></div>`;
     }
+
+    // ===== RGPD NOTICE =====
+    html += `<div style="margin-top:1rem;padding:0.8rem 1rem;background:#f0f4ff;border:1px solid #d0d9f0;border-radius:3px;font-size:0.72rem;color:#4a5568;line-height:1.6">
+      🔒 <strong>${t('GDPR Notice:','Mention RGPD :')}</strong> ${t('This analysis is based solely on your anonymous diagnostic responses. No personal data is stored without your explicit consent. Your scores are saved locally in your browser only.','Cette analyse est basée uniquement sur vos réponses anonymes au diagnostic. Aucune donnée personnelle n\'est stockée sans votre consentement explicite. Vos scores sont sauvegardés localement dans votre navigateur uniquement.')}
+    </div>`;
   }
   document.getElementById('finance-content').innerHTML = html;
 }
@@ -1147,96 +1329,156 @@ function renderImproveTab(scores, sector) {
   const SECTOR_RECS = {
     retail: {
       E: [
-        { title: t('Switch to LED & eco-packaging','Passer au LED & emballages éco'), desc: t('Replace all single-use plastic packaging with recycled/recyclable alternatives. Install LED lighting. These two actions can add 3–4 points to your E score and generate €500–2,000/year savings.','Remplacez tous les emballages plastiques à usage unique par des alternatives recyclées. Installez l\'éclairage LED. Ces deux actions peuvent ajouter 3–4 points à votre score E et générer 500–2 000€/an d\'économies.'), impact: 'high' },
-        { title: t('Local sourcing strategy','Stratégie d\'approvisionnement local'), desc: t('Commit to sourcing 30% of your products locally. Create a documented list of local suppliers. This satisfies GRI 204 and is a key criterion for public procurement eligibility.','Engagez-vous à s\'approvisionner à 30% localement. Créez une liste documentée de fournisseurs locaux. Cela satisfait la norme GRI 204 et est un critère clé pour les marchés publics.'), impact: 'high' },
+        { title: t('LED + eco-packaging — saves €500–2,000/yr + CEE grant','LED & emballages éco — économies 500–2 000€/an + aide CEE'),
+          desc: t('Replace single-use plastic with recycled alternatives. Install LED (payback 12–18 months). CEE grant: €500–3,000. Adds 3–4 pts E. → Action: contact EDF/Engie for free CEE audit this week.','Remplacez plastiques usage unique. LED : retour 12–18 mois. Aide CEE : 500–3 000€. Ajoute 3–4 pts E. → Action : contactez EDF/Engie pour audit CEE gratuit cette semaine.'),
+          impact: 'high', esg_impact: 4, financial_impact: 3, regulatory_risk: 1 },
+        { title: t('30% local sourcing — access public contracts avg €120K/yr','Achats locaux 30% — marchés publics moy. 120K€/an'),
+          desc: t('Source 30% locally. Document suppliers. GRI 204. Key criterion public procurement. Saves 5–10% transport costs. → Action: contact your CCI for local supplier directory.','30% achats locaux. Documentez fournisseurs. GRI 204. Critère clé marchés publics. Économise 5–10% transport. → Action : contactez votre CCI pour annuaire fournisseurs locaux.'),
+          impact: 'high', esg_impact: 3, financial_impact: 2, regulatory_risk: 1 },
       ],
       S: [
-        { title: t('Customer satisfaction tracking','Suivi de la satisfaction client'), desc: t('Implement a simple NPS survey (Net Promoter Score) after each purchase. Free tools: Google Forms, Typeform. This adds 2 points to your S score immediately.','Mettez en place une simple enquête NPS (Net Promoter Score) après chaque achat. Outils gratuits : Google Forms, Typeform. Cela ajoute 2 points à votre score S immédiatement.'), impact: 'med' },
+        { title: t('NPS survey (free) — +2–7% revenue uplift','Enquête NPS (gratuit) — +2–7% de chiffre d\'affaires'),
+          desc: t('Net Promoter Score after each purchase (Google Forms). +10 NPS points = +2–7% revenue. Adds 2 pts S. → Action: create your survey in 30 min, send via email or QR code.','NPS après chaque achat (Google Forms). +10 pts NPS = +2–7% CA. Ajoute 2 pts S. → Action : créez votre enquête en 30 min, envoyez par email ou QR code.'),
+          impact: 'med', esg_impact: 2, financial_impact: 3, regulatory_risk: 1 },
       ],
       G: [
-        { title: t('GDPR compliance basics','Base conformité RGPD'), desc: t('Create a simple privacy policy and cookie consent. Use a free GDPR template. This protects you legally and adds 2 points to your G score.','Créez une politique de confidentialité simple et un consentement aux cookies. Utilisez un modèle RGPD gratuit. Cela vous protège légalement et ajoute 2 points à votre score G.'), impact: 'high' },
+        { title: t('GDPR policy — avoid fines up to €20M','Politique RGPD — éviter amendes jusqu\'à 20M€'),
+          desc: t('Privacy policy + cookie consent (GDPR mandatory). Free CNIL template. Protects from fines up to €20M. Adds 2 pts G. → Action: generate free on privacy-policy.fr in 15 min.','Politique confidentialité + cookies (RGPD obligatoire). Modèle CNIL gratuit. Protège amendes jusqu\'à 20M€. Ajoute 2 pts G. → Action : générez gratuitement sur privacy-policy.fr en 15 min.'),
+          impact: 'high', esg_impact: 2, financial_impact: 1, regulatory_risk: 3 },
       ]
     },
     food: {
       E: [
-        { title: t('Food waste measurement & reduction','Mesure & réduction du gaspillage alimentaire'), desc: t('Implement daily food waste tracking (a simple spreadsheet works). Target 20% reduction in 3 months. This unlocks ADEME grants and adds 3 points E.','Mettez en place un suivi quotidien du gaspillage alimentaire (un tableur simple suffit). Visez 20% de réduction en 3 mois. Cela débloque des subventions ADEME et ajoute 3 points E.'), impact: 'high' },
-        { title: t('Short-circuit & seasonal sourcing','Approvisionnement circuit court & saisonnier'), desc: t('Partner with 2–3 local farms for seasonal produce. Document the partnership. This satisfies GRI 204, improves your E+S scores, and is a strong selling point.','Partenariez avec 2–3 fermes locales pour les produits de saison. Documentez le partenariat. Cela satisfait GRI 204, améliore vos scores E+S, et est un argument commercial fort.'), impact: 'high' },
+        { title: t('Food waste log — saves €3–8K/yr + ADEME up to €25K','Suivi gaspillage — économies 3–8K€/an + ADEME jusqu\'à 25K€'),
+          desc: t('Daily waste log (spreadsheet). Target -20% in 3 months. Saves €3,000–8,000/yr. Unlocks ADEME grants up to €25,000. Adds 3 pts E. → Action: download free ADEME waste tracking template on ademe.fr.','Journal déchets quotidien. Objectif -20% en 3 mois. Économies 3 000–8 000€/an. Débloque aides ADEME jusqu\'à 25 000€. Ajoute 3 pts E. → Action : modèle suivi gratuit sur ademe.fr.'),
+          impact: 'high', esg_impact: 3, financial_impact: 3, regulatory_risk: 2 },
+        { title: t('2 local farms — +8% customer willingness to pay','2 fermes locales — +8% consentement à payer'),
+          desc: t('2–3 local farm partnerships for seasonal produce. Document. GRI 204. +8% avg customer WTP. Eligible Terroir labels. → Action: contact Chambre d\'Agriculture for local farm directory.','2–3 fermes locales, produits de saison. Documentez. GRI 204. +8% consentement à payer. Éligible labels Terroir. → Action : Chambre d\'Agriculture pour annuaire fermes locales.'),
+          impact: 'high', esg_impact: 3, financial_impact: 2, regulatory_risk: 1 },
       ],
       S: [
-        { title: t('Staff training plan','Plan de formation du personnel'), desc: t('Create a simple annual training plan (hygiene, service, language). Even 1–2 trainings/year per employee is sufficient for GRI 404. Adds 2 points S.','Créez un plan de formation annuel simple (hygiène, service, langue). Même 1–2 formations/an par employé suffit pour GRI 404. Ajoute 2 points S.'), impact: 'med' },
+        { title: t('OPCO AKTO training — 100% funded, zero cost','Formation OPCO AKTO — 100% financé, zéro coût'),
+          desc: t('1–2 trainings/yr per employee. 100% funded via OPCO AKTO (food sector). Reduces turnover 15–25%. Adds 2 pts S. → Action: contact OPCO AKTO directly — zero cost to you.','1–2 formations/an. 100% financé OPCO AKTO. Réduit turnover 15–25%. Ajoute 2 pts S. → Action : contactez directement OPCO AKTO — zéro coût pour vous.'),
+          impact: 'med', esg_impact: 2, financial_impact: 2, regulatory_risk: 1 },
       ],
       G: [
-        { title: t('Quarterly financial review','Revue financière trimestrielle'), desc: t('Meet with your accountant or use a tool like Pennylane for quarterly P&L review. Creates the financial visibility required by GRI 201. Adds 2 points G.','Rencontrez votre expert-comptable ou utilisez un outil comme Pennylane pour une revue P&L trimestrielle. Crée la visibilité financière requise par GRI 201. Ajoute 2 points G.'), impact: 'high' },
+        { title: t('Quarterly P&L review — +10–20% margin improvement','Revue P&L trimestrielle — +10–20% amélioration des marges'),
+          desc: t('Quarterly P&L with accountant or Pennylane (free). GRI 201. Required for bank financing. Improves margins 10–20%. → Action: schedule first quarterly review this month.','Revue P&L trimestrielle avec comptable ou Pennylane (gratuit). GRI 201. Requis financement bancaire. Améliore marges 10–20%. → Action : planifiez la première revue ce mois-ci.'),
+          impact: 'high', esg_impact: 2, financial_impact: 3, regulatory_risk: 2 },
       ]
     },
     services: {
       E: [
-        { title: t('Carbon footprint & remote work policy','Bilan carbone & politique télétravail'), desc: t('Calculate your digital carbon footprint (servers, video calls, email). Implement 2 remote work days/week. These actions can reduce emissions by 20–30% and add 2 points E.','Calculez votre empreinte carbone numérique (serveurs, visioconférences, emails). Instaurez 2 jours de télétravail/semaine. Ces actions peuvent réduire les émissions de 20–30% et ajouter 2 points E.'), impact: 'med' },
+        { title: t('Green hosting + 2 remote days — saves €2–5K/yr','Hébergement vert + 2 jours télétravail — économies 2–5K€/an'),
+          desc: t('Green hosting (Infomaniak/Scaleway). 2 remote days/week. Reduces emissions 20–30%. Saves €2,000–5,000/yr office costs. Adds 2 pts E. → Action: request green hosting quote from Infomaniak today.','Hébergeur vert (Infomaniak/Scaleway). 2 jours télétravail/semaine. Réduit émissions 20–30%. Économise 2 000–5 000€/an. Ajoute 2 pts E. → Action : devis hébergement vert Infomaniak aujourd\'hui.'),
+          impact: 'med', esg_impact: 2, financial_impact: 2, regulatory_risk: 1 },
       ],
       S: [
-        { title: t('Diversity & inclusion policy','Politique diversité & inclusion'), desc: t('Write a 1-page non-discrimination and diversity commitment. Post it publicly. This satisfies GRI 405 and 406 and is required for most public procurement contracts.','Rédigez un engagement de non-discrimination et diversité d\'1 page. Publiez-le. Cela satisfait GRI 405 et 406 et est requis pour la plupart des marchés publics.'), impact: 'high' },
-        { title: t('Employee wellbeing survey','Enquête bien-être des employés'), desc: t('Run an anonymous quarterly survey (5 questions max). Free with Google Forms. Shows GRI 403 compliance and improves retention. Adds 2 points S.','Réalisez une enquête anonyme trimestrielle (5 questions max). Gratuit avec Google Forms. Démontre la conformité GRI 403 et améliore la rétention. Ajoute 2 points S.'), impact: 'med' },
+        { title: t('1-page D&I commitment — mandatory for public contracts','Engagement D&I 1 page — obligatoire marchés publics'),
+          desc: t('Non-discrimination + diversity (GRI 405, 406). Required all public procurement. Protects from claims (€5,000–50,000). Adds 2 pts S. → Action: use free ANDRH template, publish on website.','Engagement non-discrimination + diversité (GRI 405, 406). Obligatoire marchés publics. Protège litiges (5 000–50 000€). Ajoute 2 pts S. → Action : modèle ANDRH gratuit, publiez sur votre site.'),
+          impact: 'high', esg_impact: 2, financial_impact: 2, regulatory_risk: 3 },
+        { title: t('Anonymous wellbeing survey — -15% absenteeism','Enquête bien-être anonyme — -15% absentéisme'),
+          desc: t('5-question anonymous quarterly survey (Google Forms). GRI 403. Reduces absenteeism 15–20%. Improves retention 10–15%. Adds 2 pts S. → Action: create and send first survey this week (30 min).','Enquête anonyme trimestrielle 5 questions (Google Forms). GRI 403. Réduit absentéisme 15–20%. Améliore rétention 10–15%. Ajoute 2 pts S. → Action : créez et envoyez première enquête cette semaine (30 min).'),
+          impact: 'med', esg_impact: 2, financial_impact: 2, regulatory_risk: 1 },
       ],
       G: [
-        { title: t('3-year strategic roadmap','Feuille de route stratégique 3 ans'), desc: t('Write a 2–3 page strategic plan with 3–5 measurable objectives. This is GRI 201 compliant and essential for bank financing requests and investor conversations.','Rédigez un plan stratégique de 2–3 pages avec 3–5 objectifs mesurables. Conforme GRI 201 et essentiel pour les demandes de financement bancaire et les discussions avec les investisseurs.'), impact: 'high' },
+        { title: t('Strategic roadmap — reduces financing rejection 40%','Feuille de route stratégique — réduit rejets financement 40%'),
+          desc: t('2–3 page plan with 3–5 measurable objectives. GRI 201. Essential bank financing. Reduces rejection rate 40%. Adds 2 pts G. → Action: book a 2hr AuroreAD strategy session for €290.','Plan 2–3 pages avec 3–5 objectifs mesurables. GRI 201. Essentiel financement bancaire. Réduit taux rejet 40%. Ajoute 2 pts G. → Action : session stratégie AuroreAD 2h pour 290€.'),
+          impact: 'high', esg_impact: 2, financial_impact: 3, regulatory_risk: 2 },
       ]
     },
     construction: {
       E: [
-        { title: t('Site waste sorting & valorisation','Tri & valorisation des déchets de chantier'), desc: t('Implement site waste sorting (wood, metal, inert materials). Partner with a certified waste collector. This is legally required above 10 employees, and adds 3 points E + unlocks ADEME grants.','Mettez en place le tri des déchets de chantier (bois, métal, inertes). Partenariez avec un collecteur certifié. Obligatoire légalement à partir de 10 salariés, et ajoute 3 points E + débloque les aides ADEME.'), impact: 'high' },
-        { title: t('Green supplier charter','Charte fournisseurs verts'), desc: t('Create a simple charter requiring your top 5 suppliers to declare their environmental practices. Qualifies you for GRI 308 compliance and public procurement ESG criteria.','Créez une charte simple demandant à vos 5 principaux fournisseurs de déclarer leurs pratiques environnementales. Vous qualifie pour la conformité GRI 308 et les critères ESG des marchés publics.'), impact: 'high' },
+        { title: t('Site waste sorting — legal + ADEME €5–50K','Tri déchets chantier — légal + ADEME 5–50K€'),
+          desc: t('Legally required above 10 employees. Sort wood/metal/inert. Certified DASRI collector. Unlocks ADEME €5,000–50,000. Adds 3 pts E. → Action: contact local FEDEREC recycling centre today.','Obligatoire légalement > 10 salariés. Tri bois/métal/inertes. Collecteur DASRI certifié. Débloque ADEME 5 000–50 000€. Ajoute 3 pts E. → Action : centre FEDEREC local aujourd\'hui.'),
+          impact: 'high', esg_impact: 3, financial_impact: 3, regulatory_risk: 3 },
+        { title: t('Green supplier charter — opens public contracts','Charte fournisseurs verts — ouvre marchés publics'),
+          desc: t('1-page charter for top 5 suppliers. GRI 308. Required for public procurement ESG criteria. Adds 2 pts E. → Action: download free BTP supplier charter template from FNTP.','Charte 1 page pour 5 fournisseurs principaux. GRI 308. Requis marchés publics ESG. Ajoute 2 pts E. → Action : modèle charte fournisseurs BTP gratuit FNTP.'),
+          impact: 'high', esg_impact: 2, financial_impact: 2, regulatory_risk: 2 },
       ],
       S: [
-        { title: t('Unique Safety Document (DUER)','Document Unique d\'Évaluation des Risques (DUER)'), desc: t('Update or create your DUER (legally mandatory for all employers). This satisfies GRI 403 and is a prerequisite for most public contracts. Adds 2 points S.','Mettez à jour ou créez votre DUER (obligatoire légalement pour tous les employeurs). Satisfait GRI 403 et est un prérequis pour la plupart des marchés publics. Ajoute 2 points S.'), impact: 'high' },
+        { title: t('DUER update — CARSAT grant up to €25,000','Mise à jour DUER — subvention CARSAT jusqu\'à 25 000€'),
+          desc: t('Update DUER (mandatory ALL employers). GRI 403. Prerequisite public contracts + CARSAT grant up to €25,000. Protects from fines €1,500–7,500. Adds 2 pts S. → Action: free INRS DUER template on inrs.fr.','DUER à jour (obligatoire TOUS employeurs). GRI 403. Prérequis marchés publics + subvention CARSAT jusqu\'à 25 000€. Protège amendes 1 500–7 500€. Ajoute 2 pts S. → Action : modèle INRS gratuit sur inrs.fr.'),
+          impact: 'high', esg_impact: 2, financial_impact: 3, regulatory_risk: 3 },
       ],
       G: [
-        { title: t('Cost visibility dashboard','Tableau de bord de visibilité des coûts'), desc: t('Build a simple monthly dashboard tracking revenue, direct costs, and margins per project. Tools: Excel, Google Sheets. Satisfies GRI 201 and improves project profitability by 10–20%.','Construisez un tableau de bord mensuel simple suivant revenus, coûts directs et marges par projet. Outils : Excel, Google Sheets. Satisfait GRI 201 et améliore la rentabilité projet de 10–20%.'), impact: 'high' },
+        { title: t('Monthly margin dashboard — +10–20% project profitability','Tableau marges mensuel — +10–20% rentabilité chantier'),
+          desc: t('Excel/Sheets dashboard: revenue, direct costs, margins per project. GRI 201. Required BPI financing. Improves profitability 10–20%. Adds 2 pts G. → Action: download free construction margin dashboard template.','Tableau Excel/Sheets : CA, coûts, marges par chantier. GRI 201. Requis financement BPI. Améliore rentabilité 10–20%. Ajoute 2 pts G. → Action : modèle tableau de bord BTP gratuit.'),
+          impact: 'high', esg_impact: 2, financial_impact: 3, regulatory_risk: 1 },
       ]
     },
     health: {
       E: [
-        { title: t('Medical waste management protocol','Protocole gestion déchets médicaux'), desc: t('Document your DASRI (medical waste) management process and partner with a certified collector. Required by law, satisfies GRI 306, and adds 3 points E.','Documentez votre processus de gestion des DASRI et partenariez avec un collecteur certifié. Obligatoire légalement, satisfait GRI 306, et ajoute 3 points E.'), impact: 'high' },
+        { title: t('DASRI compliance — avoid fines up to €75K','Conformité DASRI — éviter amendes jusqu\'à 75K€'),
+          desc: t('Audit and segregate medical waste. Certified DASRI collector. Legally mandatory. Avoids fines up to €75,000. Unlocks ADEME waste grants. Adds 3 pts E. → Action: contact regional ARS for certified collector list.','Audit déchets médicaux. Collecteur DASRI certifié. Légalement obligatoire. Évite amendes jusqu\'à 75 000€. Débloque aides ADEME. Ajoute 3 pts E. → Action : ARS régionale pour liste collecteurs agréés.'),
+          impact: 'high', esg_impact: 3, financial_impact: 2, regulatory_risk: 3 },
       ],
       S: [
-        { title: t('Patient satisfaction measurement','Mesure de satisfaction patient'), desc: t('Implement a simple post-consultation satisfaction form (paper or digital). Net Promoter Score is sufficient. This is GRI 416 compliant and critical for certification renewals.','Mettez en place un simple formulaire de satisfaction post-consultation (papier ou numérique). Le Net Promoter Score suffit. Conforme GRI 416 et critique pour les renouvellements de certification.'), impact: 'med' },
+        { title: t('Monthly stress survey — saves €3–10K/yr/employee','Enquête stress mensuelle — économise 3–10K€/an/salarié'),
+          desc: t('Anonymous monthly stress survey (5 questions, Google Forms). QVT plan (mandatory above 50 employees). Reduces sick leave 15–20% = €3,000–10,000/yr per employee. Adds 2 pts S. → Action: ANACT free template on anact.fr.','Enquête stress mensuelle anonyme (5 questions, Google Forms). Plan QVT (obligatoire > 50 salariés). Réduit arrêts maladie 15–20% = 3 000–10 000€/an/salarié. Ajoute 2 pts S. → Action : modèle ANACT gratuit sur anact.fr.'),
+          impact: 'high', esg_impact: 2, financial_impact: 3, regulatory_risk: 2 },
       ],
       G: [
-        { title: t('GDPR health data compliance','Conformité RGPD données de santé'), desc: t('Create a specific GDPR register for health data (données de santé). This is legally mandatory, protects you from €20M fines, and satisfies GRI 418. Adds 3 points G.','Créez un registre RGPD spécifique aux données de santé. Obligatoire légalement, vous protège d\'amendes de 20M€, et satisfait GRI 418. Ajoute 3 points G.'), impact: 'high' },
+        { title: t('HAS compliance file — legally mandatory','Dossier conformité HAS — légalement obligatoire'),
+          desc: t('Update HAS compliance documentation. Legally required health establishments. Prerequisite quality certifications. Protects from suspension. Adds 2 pts G. → Action: HAS checklist on has-sante.fr.','MAJ dossier conformité HAS. Légalement obligatoire établissements santé. Prérequis certifications qualité. Protège contre suspension. Ajoute 2 pts G. → Action : checklist HAS sur has-sante.fr.'),
+          impact: 'high', esg_impact: 2, financial_impact: 2, regulatory_risk: 3 },
       ]
     },
     tech: {
       E: [
-        { title: t('Green IT & digital sobriety policy','Politique Green IT & sobriété numérique'), desc: t('Audit your digital footprint: servers, emails, video. Switch to a green hosting provider. Implement email hygiene campaigns. Can add 2 points E and reduce cloud costs by 20%.','Auditez votre empreinte numérique : serveurs, emails, vidéo. Passez à un hébergeur vert. Mettez en place des campagnes d\'hygiène email. Peut ajouter 2 points E et réduire les coûts cloud de 20%.'), impact: 'med' },
+        { title: t('Green hosting + email hygiene — -20% cloud costs','Hébergement vert — -20% coûts cloud'),
+          desc: t('Certified green hosting (Infomaniak, Scaleway). Delete 10% emails = -10% storage. Reduces cloud costs 15–25%. Adds 2 pts E. → Action: request quote from Infomaniak.com today.','Hébergeur vert certifié (Infomaniak, Scaleway). Supprimez 10% emails. Réduit coûts cloud 15–25%. Ajoute 2 pts E. → Action : devis sur Infomaniak.com aujourd\'hui.'),
+          impact: 'med', esg_impact: 2, financial_impact: 2, regulatory_risk: 1 },
       ],
       S: [
-        { title: t('Inclusion & accessibility commitment','Engagement inclusion & accessibilité'), desc: t('Commit to WCAG 2.1 accessibility standards for your product. Create an accessibility declaration. Satisfies GRI 413 and opens public sector procurement doors.','Engagez-vous sur les normes d\'accessibilité WCAG 2.1 pour votre produit. Créez une déclaration d\'accessibilité. Satisfait GRI 413 et ouvre les portes des marchés publics.'), impact: 'med' },
+        { title: t('WCAG 2.1 — opens 40% of public tech contracts','Accessibilité WCAG 2.1 — 40% des marchés publics tech'),
+          desc: t('WCAG 2.1 accessibility (mandatory public sector clients). Accessibility statement. GRI 413. Opens 40% of tech public contracts. Adds 2 pts S. → Action: free audit on accessibilite.numerique.gouv.fr.','Accessibilité WCAG 2.1 (obligatoire clients publics). Déclaration accessibilité. GRI 413. Ouvre 40% marchés publics tech. Ajoute 2 pts S. → Action : audit gratuit sur accessibilite.numerique.gouv.fr.'),
+          impact: 'med', esg_impact: 2, financial_impact: 3, regulatory_risk: 2 },
       ],
       G: [
-        { title: t('Data governance & GDPR documentation','Gouvernance des données & documentation RGPD'), desc: t('Create a full GDPR data processing register and appoint a DPO (or external service). This satisfies GRI 418, is legally required above 10 employees, and is critical for enterprise client contracts.','Créez un registre de traitement RGPD complet et désignez un DPO (ou service externe). Satisfait GRI 418, obligatoire légalement à partir de 10 salariés, et critique pour les contrats clients entreprise.'), impact: 'high' },
+        { title: t('GDPR register + DPO — avoid CNIL fines up to €20M','Registre RGPD + DPO — éviter amendes CNIL jusqu\'à 20M€'),
+          desc: t('Full GDPR register + DPO (external €200–500/yr). Required above 10 employees. GRI 418. Critical enterprise contracts. Protects from CNIL fines up to €20M. Adds 3 pts G. → Action: free CNIL template on cnil.fr.','Registre RGPD complet + DPO (externe 200–500€/an). Obligatoire > 10 salariés. GRI 418. Critique contrats entreprise. Protège amendes CNIL jusqu\'à 20M€. Ajoute 3 pts G. → Action : modèle CNIL gratuit sur cnil.fr.'),
+          impact: 'high', esg_impact: 2, financial_impact: 3, regulatory_risk: 3 },
       ]
     },
     industry: {
       E: [
-        { title: t('ISO 14001 environmental management roadmap','Feuille de route management environnemental ISO 14001'), desc: t('Begin the ISO 14001 certification path. Even without full certification, documented environmental objectives and monitoring add 4 points E and unlock major industrial grants.','Commencez le chemin de certification ISO 14001. Même sans certification complète, les objectifs environnementaux documentés et le suivi ajoutent 4 points E et débloquent des aides industrielles majeures.'), impact: 'high' },
-        { title: t('Energy efficiency audit (obligatory above 250 employees)','Audit efficacité énergétique (obligatoire au-delà de 250 salariés)'), desc: t('Commission a certified energy audit. Identifies 15–30% energy savings. Unlocks ADEME grants covering 70% of audit costs for micro-businesses.','Commandez un audit énergétique certifié. Identifie 15–30% d\'économies d\'énergie. Débloque des subventions ADEME couvrant 70% des coûts d\'audit pour les TPE.'), impact: 'high' },
+        { title: t('ISO 14001 roadmap — unlocks ADEME €20–200K','Feuille de route ISO 14001 — débloque ADEME 20–200K€'),
+          desc: t('Start ISO 14001. Documented objectives add 4 pts E + unlock ADEME industrial grants €20,000–200,000. Certification 12–18 months. Reduces insurance 5–15%. → Action: AFNOR free pre-diagnosis on afnor.org.','Commencez ISO 14001. Objectifs documentés ajoutent 4 pts E + débloquent aides ADEME industrielles 20 000–200 000€. Certification 12–18 mois. Réduit assurances 5–15%. → Action : pré-diagnostic AFNOR gratuit.'),
+          impact: 'high', esg_impact: 4, financial_impact: 3, regulatory_risk: 2 },
+        { title: t('Energy audit — saves €8–30K/yr (free for TPE)','Audit énergétique — économies 8–30K€/an (gratuit TPE)'),
+          desc: t('Free ADEME energy audit (under 250 employees). Identifies 15–30% savings = €8,000–30,000/yr. ADEME covers 70% audit cost for micro-businesses. Adds 2 pts E. → Action: apply on agirpourlatransition.ademe.fr.','Audit ADEME gratuit (< 250 salariés). 15–30% économies = 8 000–30 000€/an. ADEME couvre 70% coût audit pour TPE. Ajoute 2 pts E. → Action : déposez sur agirpourlatransition.ademe.fr.'),
+          impact: 'high', esg_impact: 2, financial_impact: 3, regulatory_risk: 2 },
       ],
       S: [
-        { title: t('Workplace ergonomics & safety review','Revue ergonomie & sécurité au travail'), desc: t('Conduct a workstation ergonomics assessment. Document findings in your DUER update. Reduces workplace accidents by 30–50%, improves productivity, and satisfies GRI 403.','Réalisez une évaluation ergonomique des postes de travail. Documentez dans votre mise à jour DUER. Réduit les accidents de 30–50%, améliore la productivité, et satisfait GRI 403.'), impact: 'high' },
+        { title: t('Ergonomics review — CARSAT grant + -30% accidents','Revue ergonomie — subvention CARSAT + -30% accidents'),
+          desc: t('Workstation ergonomics assessment. Update DUER. Reduces accidents 30–50%. Qualifies for CARSAT safety grant up to €25,000. GRI 403. Adds 2 pts S. → Action: contact CARSAT for free preventionist visit.','Évaluation ergonomique postes. DUER à jour. Réduit accidents 30–50%. Qualifie subvention CARSAT jusqu\'à 25 000€. GRI 403. Ajoute 2 pts S. → Action : CARSAT pour visite préventionniste gratuite.'),
+          impact: 'high', esg_impact: 2, financial_impact: 3, regulatory_risk: 3 },
       ],
       G: [
-        { title: t('Supplier ESG due diligence','Due diligence ESG fournisseurs'), desc: t('Implement a simple ESG questionnaire for your top 10 suppliers. This satisfies the French duty of care law (loi de vigilance) and GRI 308 — increasingly required by large customers.','Mettez en place un questionnaire ESG simple pour vos 10 principaux fournisseurs. Satisfait la loi de vigilance française et GRI 308 — de plus en plus exigé par les grands clients.'), impact: 'high' },
+        { title: t('ESG supplier questionnaire — loi de vigilance compliance','Questionnaire ESG fournisseurs — conformité loi de vigilance'),
+          desc: t('Simple ESG questionnaire for top 10 suppliers. Satisfies French duty of care law + GRI 308. Increasingly required by large customers. Protects from liability. Adds 2 pts G. → Action: download free MEDEF ESG supplier questionnaire.','Questionnaire ESG 10 fournisseurs principaux. Satisfait loi de vigilance + GRI 308. Exigé par donneurs d\'ordre. Protège responsabilité. Ajoute 2 pts G. → Action : questionnaire ESG fournisseurs MEDEF gratuit.'),
+          impact: 'high', esg_impact: 2, financial_impact: 2, regulatory_risk: 3 },
       ]
     },
     other: {
       E: [
-        { title: t('Energy audit & quick wins','Audit énergétique & gains rapides'), desc: t('Commission a free government energy audit. Identifies immediate savings and applicable grants. Average savings: 15–25% on energy costs. Adds 2–3 points E.','Demandez un audit énergétique gouvernemental gratuit. Identifie des économies immédiates et les aides applicables. Économies moyennes : 15–25% sur les coûts énergétiques. Ajoute 2–3 points E.'), impact: 'high' },
-        { title: t('Waste reduction & sorting','Réduction & tri des déchets'), desc: t('Implement visible waste sorting bins and a simple waste log. This basic action satisfies GRI 306 and is often the easiest way to add 2 points to your E score.','Installez des poubelles de tri visibles et un journal de déchets simple. Cette action de base satisfait GRI 306 et est souvent le moyen le plus facile d\'ajouter 2 points à votre score E.'), impact: 'med' },
+        { title: t('Free ADEME energy audit — saves €2–8K/yr','Audit ADEME gratuit — économies 2–8K€/an'),
+          desc: t('Free certified audit (under 250 employees). 15–25% average savings = €2,000–8,000/yr. Unlocks CEE + ADEME grants. Adds 2–3 pts E. → Action: apply on agirpourlatransition.ademe.fr today.','Audit certifié gratuit (< 250 salariés). 15–25% économies = 2 000–8 000€/an. Débloque CEE + aides ADEME. Ajoute 2–3 pts E. → Action : déposez sur agirpourlatransition.ademe.fr aujourd\'hui.'),
+          impact: 'high', esg_impact: 3, financial_impact: 3, regulatory_risk: 1 },
+        { title: t('Waste sorting bins — GRI 306 + ADEME eligible, under €200','Poubelles de tri — GRI 306 + éligible ADEME, moins de 200€'),
+          desc: t('Visible sorting bins + simple waste log. GRI 306 compliance. Unlocks ADEME grants. Cost under €200. Adds 2 pts E. → Action: order on Manutan or Amazon Business (same-day delivery available).','Poubelles de tri visibles + journal déchets. Conformité GRI 306. Débloque aides ADEME. Coût < 200€. Ajoute 2 pts E. → Action : commandez sur Manutan ou Amazon Business.'),
+          impact: 'med', esg_impact: 2, financial_impact: 1, regulatory_risk: 1 },
       ],
       S: [
-        { title: t('Employment contract review','Révision des contrats de travail'), desc: t('Have all employment contracts reviewed by an HR lawyer or via a legal platform (Legalstart, Captaincontrat). Ensures GRI 401 compliance and protects you from costly labour disputes.','Faites réviser tous les contrats de travail par un juriste RH ou via une plateforme juridique. Assure la conformité GRI 401 et vous protège des litiges sociaux coûteux.'), impact: 'high' },
+        { title: t('Contract review — avoid labour disputes €5–50K','Révision contrats — éviter litiges sociaux 5–50K€'),
+          desc: t('HR lawyer review via Legalstart or CaptainContrat (€150–300). GRI 401. Protects from labour disputes (average €5,000–50,000). Adds 2 pts S. → Action: order review on legalstart.fr today.','Révision juriste RH via Legalstart ou CaptainContrat (150–300€). GRI 401. Protège litiges sociaux (moy. 5 000–50 000€). Ajoute 2 pts S. → Action : commandez sur legalstart.fr aujourd\'hui.'),
+          impact: 'high', esg_impact: 2, financial_impact: 2, regulatory_risk: 3 },
       ],
       G: [
-        { title: t('KPI dashboard implementation','Mise en place d\'un tableau de bord KPIs'), desc: t('Define 5–8 key performance indicators for your business and track them monthly in a simple spreadsheet. This basic governance practice satisfies GRI 205 and is the foundation of strategic decision-making.','Définissez 5–8 indicateurs clés de performance pour votre activité et suivez-les mensuellement dans un tableur simple. Cette pratique de gouvernance de base satisfait GRI 205.'), impact: 'high' },
+        { title: t('5-KPI dashboard — +8–15% margin improvement','Tableau 5 KPIs — +8–15% amélioration des marges'),
+          desc: t('5–8 KPIs tracked monthly in Excel/Sheets. GRI 205. Required for bank financing. Improves margins 8–15%. Adds 2 pts G. → Action: download free AuroreAD KPI template on auroreadconsult.com.','5–8 KPIs suivis mensuellement dans Excel/Sheets. GRI 205. Requis financement bancaire. Améliore marges 8–15%. Ajoute 2 pts G. → Action : modèle KPIs AuroreAD gratuit sur auroreadconsult.com.'),
+          impact: 'high', esg_impact: 2, financial_impact: 3, regulatory_risk: 1 },
       ]
     }
   };
@@ -1255,10 +1497,9 @@ function renderImproveTab(scores, sector) {
   } else {
     html = `<div style="margin-bottom:1rem;padding:1rem 1.25rem;background:var(--navy-deep);border-radius:var(--radius)">
       <div style="font-family:'Courier Prime',monospace;font-size:0.6rem;letter-spacing:0.15em;color:var(--gold);text-transform:uppercase;margin-bottom:0.5rem">${t('SECTOR','SECTEUR')} · ${sectorLabel}</div>
-      <div style="font-size:0.82rem;color:rgba(255,255,255,0.65);line-height:1.6">${t('Recommendations are personalised for your sector and your weakest pillars. Improving these areas will directly unlock financial benefits shown in the previous tab.','Les recommandations sont personnalisées pour votre secteur et vos piliers les plus faibles. Améliorer ces domaines débloquera directement les avantages financiers présentés dans l\'onglet précédent.')}</div>
+      <div style="font-size:0.82rem;color:rgba(255,255,255,0.65);line-height:1.6">${t('Each recommendation includes exact savings, grant amounts, and an immediate action you can take today.','Chaque recommandation inclut les économies exactes, montants des aides et une action immédiate que vous pouvez mettre en œuvre aujourd\'hui.')}</div>
     </div>`;
 
-    // Prioritise based on lowest scores
     const weakest = [
       { pillar: 'E', score: lastSE, recs: sectorRecs.E || [] },
       { pillar: 'S', score: lastSS, recs: sectorRecs.S || [] },
@@ -1269,24 +1510,41 @@ function renderImproveTab(scores, sector) {
     const PILLAR_NAMES = { E: t('Environment','Environnement'), S: 'Social', G: t('Governance','Gouvernance') };
     const PILLAR_EMOJI = { E: '🌱', S: '👥', G: '🏛️' };
 
-    html += `<div class="recs-section"><div class="recs-header"><span>🎯</span><h3>${t('Priority Actions for Your Business','Actions Prioritaires pour Votre Entreprise')}</h3></div><div class="recs-body">`;
+    html += `<div class="recs-section"><div class="recs-header"><span>🎯</span><h3>${t('Priority Actions — Ordered by Weakest Pillar','Actions Prioritaires — Classées par Pilier le Plus Faible')}</h3></div><div class="recs-body">`;
     weakest.forEach(({ pillar, score, recs }) => {
       if (!recs.length) return;
-      html += `<div style="margin-bottom:0.4rem;padding:0.4rem 0.8rem;background:${PILLAR_COLORS[pillar]}18;border-left:3px solid ${PILLAR_COLORS[pillar]};border-radius:0 3px 3px 0;font-family:'Courier Prime',monospace;font-size:0.62rem;color:${PILLAR_COLORS[pillar]};letter-spacing:0.1em;font-weight:700">${PILLAR_EMOJI[pillar]} ${PILLAR_NAMES[pillar].toUpperCase()} — ${score}/20 ${score < 10 ? '⚠️ '+t('Priority','Priorité') : ''}</div>`;
+      html += `<div style="margin-bottom:0.5rem;padding:0.5rem 0.9rem;background:${PILLAR_COLORS[pillar]}15;border-left:3px solid ${PILLAR_COLORS[pillar]};border-radius:0 3px 3px 0;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Courier Prime',monospace;font-size:0.62rem;color:${PILLAR_COLORS[pillar]};letter-spacing:0.1em;font-weight:700">${PILLAR_EMOJI[pillar]} ${PILLAR_NAMES[pillar].toUpperCase()} — ${score}/20</span>
+        ${score < 8 ? `<span style="background:#fee2e2;color:#991b1b;font-size:0.55rem;font-family:'Courier Prime',monospace;padding:0.15rem 0.45rem;border-radius:2px;font-weight:700">⚡ ${t('PRIORITY','PRIORITÉ')}</span>`
+        : score < 14 ? `<span style="background:#fef3c7;color:#92400e;font-size:0.55rem;font-family:'Courier Prime',monospace;padding:0.15rem 0.45rem;border-radius:2px;font-weight:700">${t('TO IMPROVE','À AMÉLIORER')}</span>`
+        : `<span style="background:#d1fae5;color:#065f46;font-size:0.55rem;font-family:'Courier Prime',monospace;padding:0.15rem 0.45rem;border-radius:2px;font-weight:700">✅ ${t('GOOD','BON')}</span>`}
+      </div>`;
       recs.forEach(rec => {
+        const esgStars = '★'.repeat(rec.esg_impact||2) + '☆'.repeat(5-(rec.esg_impact||2));
+        const finStars = '★'.repeat(rec.financial_impact||2) + '☆'.repeat(5-(rec.financial_impact||2));
+        const regLevel = rec.regulatory_risk >= 3
+          ? `<span style="color:#dc2626;font-size:0.65rem">⚠️ ${t('Legal obligation','Obligation légale')}</span>`
+          : rec.regulatory_risk === 2
+          ? `<span style="color:#d97706;font-size:0.65rem">📋 ${t('Regulatory benefit','Bénéfice réglementaire')}</span>`
+          : `<span style="color:#2d6a4f;font-size:0.65rem">✅ ${t('Low regulatory risk','Faible risque réglementaire')}</span>`;
         html += `<div class="rec-item">
           <div class="rec-pillar ${pillar}">${PILLAR_EMOJI[pillar]}</div>
           <div class="rec-content">
             <h4>${rec.title}</h4>
             <p>${rec.desc}</p>
-            <span class="rec-impact ${rec.impact === 'high' ? 'impact-high' : 'impact-med'}">${rec.impact === 'high' ? t('⬆ High impact','⬆ Fort impact') : t('→ Medium impact','→ Impact moyen')}</span>
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.5rem;align-items:center">
+              <span style="font-size:0.62rem;color:var(--text-soft);font-family:'Courier Prime',monospace">ESG ${esgStars}</span>
+              <span style="font-size:0.62rem;color:var(--text-soft);font-family:'Courier Prime',monospace">💰 ${finStars}</span>
+              ${regLevel}
+              <span class="rec-impact ${rec.impact === 'high' ? 'impact-high' : 'impact-med'}">${rec.impact === 'high' ? t('⬆ High impact','⬆ Fort impact') : t('→ Medium impact','→ Impact moyen')}</span>
+            </div>
           </div>
         </div>`;
       });
     });
     html += `</div></div>`;
 
-    html += `<div class="recs-cta"><p>${t('For a personalised, step-by-step ESG roadmap tailored to your sector, company size and objectives, our experts accompany you every step of the way.','Pour une feuille de route ESG personnalisée, étape par étape, adaptée à votre secteur, taille d\'entreprise et objectifs, nos experts vous accompagnent à chaque étape.')}</p><a href="https://auroreadconsult.com/contact" class="btn-contact-small" target="_blank">${t('Get my personalised roadmap','Obtenir ma feuille de route personnalisée')}</a></div>`;
+    html += `<div class="recs-cta"><p>${t('For a personalised ESG roadmap with grant file preparation, our experts accompany you from diagnosis to funding.','Pour une feuille de route ESG personnalisée avec préparation des dossiers de subvention, nos experts vous accompagnent du diagnostic au financement.')}</p><a href="https://auroreadconsult.com/contact" class="btn-contact-small" target="_blank">${t('Get my personalised roadmap →','Obtenir ma feuille de route personnalisée →')}</a></div>`;
   }
   document.getElementById('improve-content').innerHTML = html;
 }
@@ -1400,19 +1658,101 @@ function getQS() {
 }
 
 const GRANTS = [
-  { icon:'⚡', name_en:"Energy Efficiency Schemes", name_fr:"Dispositifs d'efficacité énergétique", desc_en:"Rebates from energy suppliers for any energy-saving renovation. Accessible from the very first efforts.", desc_fr:"Remises des fournisseurs d'énergie pour toute rénovation économe. Accessible dès les premiers efforts.", min:0, type:'energy' },
-  { icon:'🌿', name_en:"Free Government Energy Audit", name_fr:"Audit énergétique gouvernemental gratuit", desc_en:"Free energy audit for SMEs. Identifies achievable savings and applicable grants.", desc_fr:"Audit énergétique gratuit pour les PME. Identifie les économies réalisables et les aides applicables.", min:5, type:'energy' },
-  { icon:'🎓', name_en:"Levy-Funded Staff Training", name_fr:"Formation professionnelle financée", desc_en:"Full or partial funding for training through OPCO/government levy schemes.", desc_fr:"Financement total ou partiel des formations via les OPCO.", min:0, type:'training' },
-  { icon:'🏗️', name_en:"Green Premises Renovation Grant", name_fr:"Aide à la rénovation verte des locaux", desc_en:"Support for commercial premises renovation (insulation, heating, ventilation). Up to €25,000.", desc_fr:"Aide pour la rénovation des locaux commerciaux. Jusqu'à 25 000€.", min:10, type:'renovation' },
-  { icon:'🤝', name_en:"Apprenticeship Hiring Incentive", name_fr:"Prime à l'embauche d'apprentis", desc_en:"Up to €6,000 per apprentice recruited. Direct reduction of your business tax bill.", desc_fr:"Jusqu'à 6 000€ par apprenti recruté. Réduction directe de votre charge fiscale.", min:10, type:'fiscal' },
-  { icon:'♿', name_en:"Disability Employment Support", name_fr:"Aide à l'emploi de travailleurs handicapés", desc_en:"Subsidy for integrating workers with disabilities. Reduces payroll costs.", desc_fr:"Subvention pour l'intégration de travailleurs handicapés. Réduit les coûts salariaux.", min:15, type:'social' },
-  { icon:'🔒', name_en:"Workplace Safety Improvement Grant", name_fr:"Subvention amélioration sécurité au travail", desc_en:"Up to €25,000 for improving health & safety. Requires a documented prevention plan.", desc_fr:"Jusqu'à 25 000€ pour améliorer la santé & sécurité. Nécessite un plan de prévention documenté.", min:20, type:'safety' },
-  { icon:'🏦', name_en:"Green Growth Loan (BPI France)", name_fr:"Prêt Vert BPI France", desc_en:"Unsecured loan at a subsidised rate for ecological investments. From €50,000 to €5M.", desc_fr:"Prêt non garanti à taux bonifié pour les investissements écologiques. De 50 000€ à 5M€.", min:30, type:'financing' },
-  { icon:'💡', name_en:"R&D / Innovation Tax Relief (CIR)", name_fr:"Crédit d'Impôt Recherche / Innovation (CIR)", desc_en:"Up to 33% of qualifying innovation expenditure reimbursed. Available to independent SMEs.", desc_fr:"Jusqu'à 33% des dépenses d'innovation qualifiantes remboursées. Pour les PME indépendantes.", min:35, type:'fiscal' },
-  { icon:'🇪🇺', name_en:"European Structural Funds (ERDF/ESF+)", name_fr:"Fonds européens structurels (FEDER/FSE+)", desc_en:"EU co-financing for digital and ecological transition of SMEs. Via regional authorities.", desc_fr:"Co-financement UE pour la transition numérique et écologique. Via les autorités régionales.", min:40, type:'financing' },
-  { icon:'🌱', name_en:"CSR / ESG Certification Label", name_fr:"Label / Certification RSE-ESG", desc_en:"Certification recognising your ESG practices. Improves access to public contracts and investors.", desc_fr:"Certification reconnaissant vos pratiques ESG. Améliore l'accès aux marchés publics.", min:45, type:'label' },
-  { icon:'🏆', name_en:"Public Procurement (CSR Criteria)", name_fr:"Marchés publics (critères RSE)", desc_en:"Advanced ESG score: a direct award criterion in public procurement tenders.", desc_fr:"Score ESG avancé : critère d'attribution dans les appels d'offres publics.", min:50, type:'market' },
-  { icon:'💚', name_en:"Green Bonds / Sustainable Finance", name_fr:"Obligations vertes / Finance durable", desc_en:"Access to green bond financing for structured SMEs. Via platforms or partner banks.", desc_fr:"Accès aux financements obligataires verts pour les PME structurées.", min:55, type:'financing' },
+  // SCORE 0+ — accessible à tous
+  { icon:'⚡', name_en:"CEE (Energy Savings Certificates)", name_fr:"CEE — Certificats d'Économies d'Énergie",
+    desc_en:"Energy suppliers are legally required to fund your energy renovations. No minimum score needed. Typical amounts: LED replacement €500–3,000 · insulation €3,000–15,000 · boiler €2,000–8,000. Contact EDF, Engie or a broker directly.", 
+    desc_fr:"Les fournisseurs d'énergie sont légalement tenus de financer vos rénovations. LED : 500–3 000€ · isolation : 3 000–15 000€ · chaudière : 2 000–8 000€. Contactez EDF, Engie ou un courtier.",
+    amount_en:"€500 – €15,000 depending on works", amount_fr:"500€ – 15 000€ selon travaux", min:0, type:'energy', priority:'high', regulatory_risk:'low' },
+
+  { icon:'🎓', name_en:"OPCO Training Funding (100% covered)", name_fr:"Financement OPCO (formation 100% prise en charge)",
+    desc_en:"All employee training costs fully covered by your OPCO (sectoral training body). Manager training: €18.38/hr tax credit (Crédit Impôt Formation). No cap for micro-businesses. File in 30 min on Mon-entreprise.urssaf.fr.",
+    desc_fr:"Toutes les formations salariés couvertes par votre OPCO. Crédit d'impôt formation dirigeant : 18,38€/h (TPE) ou 24,63€/h (moins de 10 salariés). Dossier en 30 min sur mon-entreprise.urssaf.fr.",
+    amount_en:"100% of training costs + €18.38–24.63/hr tax credit", amount_fr:"100% des coûts + 18,38–24,63€/h crédit d'impôt", min:0, type:'fiscal', priority:'high', regulatory_risk:'low' },
+
+  { icon:'🤝', name_en:"Apprenticeship Incentive — €6,000", name_fr:"Prime apprentissage — 6 000€",
+    desc_en:"€6,000 direct grant per apprentice hired (companies under 250 employees). Paid in 2 instalments. Applies to any contract signed in 2024–2025. File on alternance.emploi.gouv.fr within 5 days of contract.",
+    desc_fr:"6 000€ de prime directe par apprenti embauché (entreprises < 250 salariés). Versé en 2 fois. Valable pour tout contrat signé en 2024–2025. Dépôt sur alternance.emploi.gouv.fr dans les 5 jours.",
+    amount_en:"€6,000 per apprentice (paid in 2 instalments)", amount_fr:"6 000€ par apprenti (2 versements)", min:5, type:'fiscal', priority:'high', regulatory_risk:'low' },
+
+  // SCORE 10+
+  { icon:'🏗️', name_en:"MaPrimeRénov' Pro — Green Premises", name_fr:"MaPrimeRénov' Pro — Rénovation locaux",
+    desc_en:"State subsidy for commercial premises renovation: insulation, heating, ventilation. Up to 50% of works for SMEs. Max €25,000. Requires a certified RGE contractor. Apply on maprimerenov.gouv.fr.",
+    desc_fr:"Subvention État pour rénovation locaux commerciaux : isolation, chauffage, ventilation. Jusqu'à 50% du montant pour les PME. Plafond : 25 000€. Artisan RGE obligatoire. Dossier sur maprimerenov.gouv.fr.",
+    amount_en:"Up to 50% of works — max €25,000", amount_fr:"Jusqu'à 50% des travaux — plafond 25 000€", min:10, type:'renovation', priority:'high', regulatory_risk:'med' },
+
+  { icon:'♿', name_en:"AGEFIPH — Disability Employment Grant", name_fr:"AGEFIPH — Aide emploi travailleur handicapé",
+    desc_en:"€4,000 grant for hiring a disabled worker (RQTH). Additional €1,000 for workplace adaptation works. No size condition. Reduces payroll costs and satisfies GRI 405. File on agefiph.fr.",
+    desc_fr:"4 000€ de subvention pour l'embauche d'un travailleur RQTH. 1 000€ supplémentaires pour aménagement de poste. Aucune condition de taille. Satisfait GRI 405. Dossier sur agefiph.fr.",
+    amount_en:"€4,000 hiring grant + €1,000 adaptation", amount_fr:"4 000€ prime embauche + 1 000€ aménagement", min:10, type:'social', priority:'med', regulatory_risk:'low' },
+
+  // SCORE 15+
+  { icon:'🛡️', name_en:"CARSAT Safety Grant — €25,000", name_fr:"Subvention CARSAT Sécurité — 25 000€",
+    desc_en:"Grant of up to €25,000 for workplace health & safety improvements. Requires a documented DUER (Risk Assessment). Rate: 50–70% of works. Sectors: construction, food, industry, health. File on net-entreprises.fr.",
+    desc_fr:"Jusqu'à 25 000€ pour améliorer la santé & sécurité au travail. DUER obligatoire. Taux : 50–70% des travaux. Secteurs : BTP, alimentaire, industrie, santé. Dossier sur net-entreprises.fr.",
+    amount_en:"50–70% of works — max €25,000", amount_fr:"50–70% des travaux — plafond 25 000€", min:15, type:'safety', priority:'high', regulatory_risk:'high' },
+
+  { icon:'🌿', name_en:"Free ADEME Energy Audit", name_fr:"Audit énergétique ADEME gratuit",
+    desc_en:"Free certified energy audit for SMEs under 250 employees. Identifies 15–25% average savings on energy bills. Unlocks further CEE and ADEME grants. Apply on agirpourlatransition.ademe.fr.",
+    desc_fr:"Audit énergétique certifié gratuit pour TPE/PME < 250 salariés. Identifie 15–25% d'économies moyennes. Débloque CEE et aides ADEME. Dossier sur agirpourlatransition.ademe.fr.",
+    amount_en:"Free audit (value €2,000–5,000) + unlocks further grants", amount_fr:"Audit gratuit (valeur 2 000–5 000€) + débloque aides", min:15, type:'energy', priority:'high', regulatory_risk:'low' },
+
+  // SCORE 20+
+  { icon:'🏦', name_en:"ESG-Linked Rate Reduction (Banks)", name_fr:"Réduction de taux ESG (banques)",
+    desc_en:"Crédit Agricole, BNP Paribas, Société Générale and Banque Populaire offer rate cuts of 0.25–2% for borrowers with documented ESG practices. On a €200,000 loan over 7 years: saving of €3,500–28,000. Ask your banker for a 'prêt vert' or 'crédit ESG'.",
+    desc_fr:"Crédit Agricole, BNP, SG et Banque Populaire accordent des baisses de taux de 0,25–2% aux emprunteurs avec pratiques ESG documentées. Sur 200 000€ sur 7 ans : économie de 3 500–28 000€. Demandez un 'prêt vert' à votre banquier.",
+    amount_en:"−0.25% to −2% rate · €3,500–28,000 saved on €200K loan", amount_fr:"−0,25% à −2% · 3 500–28 000€ économisés sur 200K€", min:20, type:'financing', priority:'high', regulatory_risk:'low' },
+
+  // SCORE 25+
+  { icon:'🏭', name_en:"ADEME Ecological Transition Grant", name_fr:"Bonus Écologique ADEME — Transition",
+    desc_en:"ADEME subsidises ecological investments: equipment (up to 70% for micro-businesses), energy audit, green renovation. Amounts: €5,000–200,000. Micro-businesses benefit from highest subsidy rates. Apply on ademe.fr/aides-financieres.",
+    desc_fr:"L'ADEME subventionne les investissements écologiques : équipements (jusqu'à 70% pour les TPE), audit énergétique, rénovation verte. Montants : 5 000–200 000€. Les TPE bénéficient des taux les plus élevés. Dossier sur ademe.fr.",
+    amount_en:"€5,000–200,000 · up to 70% subsidy rate for micro-biz", amount_fr:"5 000–200 000€ · jusqu'à 70% pour les TPE", min:25, type:'grant', priority:'high', regulatory_risk:'med' },
+
+  // SCORE 30+
+  { icon:'💳', name_en:"BPI France Green Loan — from €50K", name_fr:"Prêt Vert BPI France — à partir de 50K€",
+    desc_en:"Unsecured loan at subsidised rate (currently 3.5–4.5% vs market 6–7%) for ecological investments. Amounts: €50,000–5M. Repayment: 3–7 years. Requires a documented transition project. Apply on bpifrance.fr/nos-solutions.",
+    desc_fr:"Prêt sans garantie à taux bonifié (3,5–4,5% vs marché 6–7%) pour investissements écologiques. Montants : 50 000€–5M€. Durée : 3–7 ans. Projet de transition documenté requis. Dossier sur bpifrance.fr.",
+    amount_en:"€50,000–5M at 3.5–4.5% (vs 6–7% market rate)", amount_fr:"50 000€–5M à 3,5–4,5% (vs 6–7% taux marché)", min:30, type:'financing', priority:'high', regulatory_risk:'low' },
+
+  { icon:'🔬', name_en:"Innovation Tax Credit (CII) — 20%", name_fr:"Crédit d'Impôt Innovation (CII) — 20%",
+    desc_en:"20% of eligible innovation expenditure reimbursed (prototypes, new products/services). Capped at €400,000/yr (= €80,000 cash back). For independent SMEs. Declare via your tax return (Form 2069-A). Apply retroactively for up to 3 years.",
+    desc_fr:"20% des dépenses d'innovation remboursées (prototypes, nouveaux produits/services). Plafond 400 000€/an (= 80 000€ de retour cash). Pour PME indépendantes. Déclarez via liasse fiscale (formulaire 2069-A). Rétroactif sur 3 ans.",
+    amount_en:"20% of spend — up to €80,000 cash back/year", amount_fr:"20% des dépenses — jusqu'à 80 000€/an en retour cash", min:30, type:'fiscal', priority:'high', regulatory_risk:'med' },
+
+  // SCORE 35+
+  { icon:'💡', name_en:"R&D Tax Credit (CIR) — 30%", name_fr:"Crédit d'Impôt Recherche (CIR) — 30%",
+    desc_en:"30% of R&D expenditure reimbursed (up to €100M), then 5% above. No cap on eligible activities. Salaries of researchers, patents, subcontracted R&D all qualify. File Form 2069-A with your tax return. Average claim: €50,000–500,000.",
+    desc_fr:"30% des dépenses R&D remboursées (jusqu'à 100M€), puis 5% au-delà. Salaires chercheurs, brevets, R&D sous-traitée éligibles. Formulaire 2069-A avec la liasse fiscale. Déclaration moyenne : 50 000–500 000€.",
+    amount_en:"30% of R&D spend — no upper limit", amount_fr:"30% des dépenses R&D — sans plafond supérieur", min:35, type:'fiscal', priority:'high', regulatory_risk:'med' },
+
+  // SCORE 40+
+  { icon:'🇪🇺', name_en:"EU ERDF/ESF+ Structural Funds", name_fr:"Fonds européens FEDER/FSE+",
+    desc_en:"EU co-financing of 40–80% for digital and ecological transitions. Via regional councils (Conseils Régionaux). Requires ESG documentation and a 3-year project plan. Typical amounts: €20,000–500,000. Contact your regional BPI or CCI.",
+    desc_fr:"Co-financement UE 40–80% pour transitions numérique et écologique. Via les Conseils Régionaux. Documentation ESG et plan projet 3 ans requis. Montants typiques : 20 000–500 000€. Contactez BPI ou CCI de votre région.",
+    amount_en:"40–80% co-financing · €20,000–500,000", amount_fr:"Co-financement 40–80% · 20 000–500 000€", min:40, type:'financing', priority:'high', regulatory_risk:'med' },
+
+  { icon:'📊', name_en:"TVA at 5.5% — Energy Works", name_fr:"TVA à 5,5% — Travaux énergétiques",
+    desc_en:"Reduced VAT rate of 5.5% (vs 20%) on all energy improvement works: insulation, heating, solar panels. Applies to premises over 2 years old. Saving: 14.5 points of VAT = €1,450 per €10,000 of works. Automatic — just ask your contractor.",
+    desc_fr:"TVA réduite à 5,5% (vs 20%) sur tous travaux d'amélioration énergétique : isolation, chauffage, panneaux solaires. Locaux > 2 ans. Économie : 14,5 points de TVA = 1 450€ par 10 000€ de travaux. Automatique — demandez à votre artisan.",
+    amount_en:"5.5% instead of 20% VAT · €1,450 saved per €10K works", amount_fr:"5,5% au lieu de 20% TVA · 1 450€ économisés par 10K€ travaux", min:40, type:'fiscal', priority:'high', regulatory_risk:'low' },
+
+  // SCORE 45+
+  { icon:'🌱', name_en:"Lucie / Engagé RSE Label", name_fr:"Label Lucie / Engagé RSE",
+    desc_en:"Official CSR certification (AFNOR/ISO 26000 or Lucie 26000). Cost: €3,000–8,000. Opens public procurement tenders with CSR criteria, improves bank rating, and reduces insurance premiums by 5–15%. Return on investment typically under 18 months.",
+    desc_fr:"Certification RSE officielle (AFNOR/ISO 26000 ou Lucie 26000). Coût : 3 000–8 000€. Ouvre les marchés publics avec critères RSE, améliore la notation bancaire, réduit les primes d'assurance de 5–15%. ROI généralement < 18 mois.",
+    amount_en:"Unlocks public contracts + 5–15% insurance reduction", amount_fr:"Ouvre marchés publics + 5–15% réduction assurance", min:45, type:'label', priority:'high', regulatory_risk:'low' },
+
+  // SCORE 50+
+  { icon:'🏆', name_en:"Public Procurement — CSR Award Criteria", name_fr:"Marchés publics — Critère RSE d'attribution",
+    desc_en:"Since 2021, all public contracts above €40,000 must include ESG criteria. With a score of 50+, you meet the selection threshold for 85% of tenders. Average public contract value: €120,000/year. Contact your CCI or BPI for a list of tenders.",
+    desc_fr:"Depuis 2021, tous marchés publics > 40 000€ incluent des critères ESG. Avec un score 50+, vous atteignez le seuil de sélection pour 85% des appels d'offres. Valeur moyenne marché public : 120 000€/an. Contactez votre CCI ou BPI.",
+    amount_en:"Eligible for 85% of public tenders — avg value €120K/yr", amount_fr:"Éligible à 85% des appels d'offres — valeur moy. 120K€/an", min:50, type:'market', priority:'high', regulatory_risk:'high' },
+
+  // SCORE 55+
+  { icon:'💚', name_en:"Green Bonds / SRI Financing", name_fr:"Obligations vertes / Finance ISR",
+    desc_en:"Access to green bond financing and ESG-screened investment funds (SRI). Typical ticket: €500,000–5M. Requires a formal ESG report and external verification. Via platforms: Lita.co, Lendosphere, or institutional banks.",
+    desc_fr:"Accès aux obligations vertes et fonds ISR (Investissement Socialement Responsable). Ticket typique : 500 000€–5M€. Rapport ESG formel et vérification externe requis. Via : Lita.co, Lendosphere, ou banques institutionnelles.",
+    amount_en:"€500K–5M green financing available", amount_fr:"500K€–5M€ de financement vert disponible", min:55, type:'financing', priority:'med', regulatory_risk:'low' },
 ];
 
 const LEVELS = [
