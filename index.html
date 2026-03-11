@@ -936,7 +936,7 @@ function setAuthLang(l) {
   document.getElementById('html-root').lang = l;
   // Update all data-en/data-fr elements
   document.querySelectorAll('[data-en]').forEach(el => {
-    if(el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') el.textContent = l==='fr' ? (el.dataset.fr||el.dataset.en) : el.dataset.en;
+    if(el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') el.innerHTML = l==='fr' ? (el.dataset.fr||el.dataset.en) : el.dataset.en;
   });
   // Update placeholders
   document.querySelectorAll('[data-ph-fr]').forEach(el => {
