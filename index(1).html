@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LIA' · ESG Impact Score™ — AuroreAD</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Raleway:wght@300;400;500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 <!-- Emails envoyés via Google Apps Script -->
 <style>
@@ -911,17 +912,30 @@ function setLang(l) {
 }
 function t(en, fr) { return lang === 'fr' ? fr : en; }
 
+// ===== SUPABASE =====
+const SUPABASE_URL = 'https://mhliuznzzobhpvtvfeuq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_vh6gb7cBG_wWM2lPi_pZNQ_CHg3Sqj3';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'lia-esg-auth',
+    storage: window.localStorage,
+    autoRefreshToken: true,
+    detectSessionInUrl: false
+  }
+});
+
 // ===== AUTH =====
-const STORE = 'lia_users', SESS = 'lia_session';
+const SESS = 'lia_session';
 let selectedSector = '';
 let currentUser = null;
 const savedAns = {};
 
-function getUsers() { try { return JSON.parse(localStorage.getItem(STORE)||'{}'); } catch(e){ return {}; } }
-function saveUsers(u) { localStorage.setItem(STORE, JSON.stringify(u)); }
 function getSession() { try { return JSON.parse(localStorage.getItem(SESS)||'null'); } catch(e){ return null; } }
 function setSession(u) { localStorage.setItem(SESS, JSON.stringify(u)); }
 function clearSession() { localStorage.removeItem(SESS); }
+function getUsers() { return {}; }
+function saveUsers(u) { /* data stored in Supabase */ }
 
 function selectSector(btn) {
   document.querySelectorAll('.sector-btn').forEach(b => b.classList.remove('selected'));
@@ -959,27 +973,78 @@ function showErr(id, msg) {
   setTimeout(() => el.classList.remove('visible'), 4000);
 }
 
-function doRegister() {
+async function doRegister() {
   const name = document.getElementById('reg-name').value.trim();
   const company = document.getElementById('reg-company').value.trim();
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
   const pwd = document.getElementById('reg-pwd').value;
   if (!name || !email || !pwd) return showErr('register-error', t('Please fill all required fields.','Veuillez remplir tous les champs obligatoires.'));
   if (pwd.length < 6) return showErr('register-error', t('Password must be at least 6 characters.','Le mot de passe doit contenir au moins 6 caractères.'));
-  const users = getUsers();
-  if (users[email]) return showErr('register-error', t('Account already exists. Please sign in.','Ce compte existe déjà. Connectez-vous.'));
-  users[email] = { name, company: company || t('Not specified','Non renseigné'), email, pwd, sector: selectedSector||'other', scores: [], createdAt: new Date().toISOString() };
-  saveUsers(users);
-  loginUser(users[email]);
+
+  const btn = document.querySelector('#apanel-register .auth-btn');
+  btn.textContent = t('Creating...','Création en cours...');
+  btn.disabled = true;
+
+  // Create auth account in Supabase
+  const { data: authData, error: authError } = await sb.auth.signUp({ email, password: pwd });
+  if (authError) {
+    btn.textContent = t('Create my free space →','Créer mon espace gratuit →');
+    btn.disabled = false;
+    if (authError.message.includes('already registered')) {
+      return showErr('register-error', t('Account already exists. Please sign in.','Ce compte existe déjà. Connectez-vous.'));
+    }
+    return showErr('register-error', authError.message);
+  }
+
+  // Save profile in profiles table
+  const { error: profileError } = await sb.from('profiles').upsert({
+    id: authData.user.id,
+    email,
+    name,
+    company: company || t('Not specified','Non renseigné'),
+    sector: selectedSector || 'other',
+    created_at: new Date().toISOString()
+  });
+
+  btn.textContent = t('Create my free space →','Créer mon espace gratuit →');
+  btn.disabled = false;
+
+  const user = { id: authData.user.id, email, name, company: company || '', sector: selectedSector||'other', scores: [] };
+  loginUser(user);
 }
 
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('login-email').value.trim().toLowerCase();
   const pwd = document.getElementById('login-pwd').value;
-  const users = getUsers();
-  if (!users[email]) return showErr('login-error', t('No account found with this email.','Aucun compte trouvé avec cet email.'));
-  if (users[email].pwd !== pwd) return showErr('login-error', t('Incorrect password.','Mot de passe incorrect.'));
-  loginUser(users[email]);
+  if (!email || !pwd) return showErr('login-error', t('Please fill all fields.','Veuillez remplir tous les champs.'));
+
+  const btn = document.querySelector('#apanel-login .auth-btn');
+  btn.textContent = t('Signing in...','Connexion en cours...');
+  btn.disabled = true;
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+
+  btn.textContent = t('Sign in →','Se connecter →');
+  btn.disabled = false;
+
+  if (error) {
+    return showErr('login-error', t('Incorrect email or password.','Email ou mot de passe incorrect.'));
+  }
+
+  // Load profile from Supabase
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+  // Load scores from Supabase
+  const { data: scoresData } = await sb.from('scores').select('*').eq('user_id', data.user.id).order('created_at', { ascending: true });
+
+  const user = {
+    id: data.user.id,
+    email: data.user.email,
+    name: profile?.name || email,
+    company: profile?.company || '',
+    sector: profile?.sector || 'other',
+    scores: (scoresData || []).map(s => ({ total: s.total, sE: s.s_e, sS: s.s_s, sG: s.s_g, date: s.date_label }))
+  };
+  loginUser(user);
 }
 
 function loginUser(user) {
@@ -991,7 +1056,8 @@ function loginUser(user) {
   showDashboard();
 }
 
-function doLogout() {
+async function doLogout() {
+  await sb.auth.signOut();
   currentUser = null;
   clearSession();
   document.getElementById('header-user-btn').classList.remove('visible');
@@ -1008,17 +1074,28 @@ function showAuthOverlay() {
   document.getElementById('auth-overlay').classList.remove('hidden');
 }
 
-function restoreSession() {
-  const sess = getSession();
-  if (!sess) return;
-  const users = getUsers();
-  if (users[sess.email]) {
-    currentUser = users[sess.email];
+async function restoreSession() {
+  // Try Supabase session first
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+    const { data: scoresData } = await sb.from('scores').select('*').eq('user_id', session.user.id).order('created_at', { ascending: true });
+    currentUser = {
+      id: session.user.id,
+      email: session.user.email,
+      name: profile?.name || session.user.email,
+      company: profile?.company || '',
+      sector: profile?.sector || 'other',
+      scores: (scoresData || []).map(s => ({ total: s.total, sE: s.s_e, sS: s.s_s, sG: s.s_g, date: s.date_label }))
+    };
+    setSession({ email: currentUser.email });
     document.getElementById('auth-overlay').classList.add('hidden');
     document.getElementById('header-user-btn').classList.add('visible');
     document.getElementById('intro-nudge').style.display = 'none';
     showDashboard();
+    return;
   }
+  // No active session — show auth overlay
 }
 
 // ===== DASHBOARD =====
@@ -1554,15 +1631,28 @@ function startNewDiagnostic() {
   restart();
 }
 
-function saveScoreToAccount() {
+async function saveScoreToAccount() {
   if (!currentUser || !finalScores) return;
   const { sE, sS, sG, tot } = finalScores;
-  const entry = { total:tot, sE, sS, sG, date: new Date().toLocaleDateString(lang==='fr'?'fr-FR':'en-GB', {day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) };
-  const users = getUsers();
-  if (!users[currentUser.email].scores) users[currentUser.email].scores = [];
-  users[currentUser.email].scores.push(entry);
-  currentUser.scores = users[currentUser.email].scores;
-  saveUsers(users);
+  const dateLabel = new Date().toLocaleDateString(lang==='fr'?'fr-FR':'en-GB', {day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const entry = { total:tot, sE, sS, sG, date: dateLabel };
+
+  // Save to Supabase
+  await sb.from('scores').insert({
+    user_id: currentUser.id,
+    total: tot,
+    s_e: sE,
+    s_s: sS,
+    s_g: sG,
+    sector: currentUser.sector || 'other',
+    date_label: dateLabel
+  });
+
+  // Update local currentUser scores
+  if (!currentUser.scores) currentUser.scores = [];
+  currentUser.scores.push(entry);
+
+  // scores already updated above
   document.getElementById('btn-save-score').style.display = 'none';
   document.getElementById('save-ok').classList.add('visible');
 }
