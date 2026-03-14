@@ -1504,148 +1504,6 @@ table.rm-tbl tr:hover td{background:#fdfcfa}
 </footer>
 
 <script>
-// ===== RESSOURCES UTILES PAR RECOMMANDATION =====
-const RESOURCES_DB = {
-  // ── ENVIRONNEMENT ──
-  energy: [
-    { name:'ADEME · Mon parcours énergie', url:'https://monparcourseconomiesdenergie.ademe.fr', type:'info', icon:'🏛️' },
-    { name:'EDF Entreprises', url:'https://entreprises.edf.fr', type:'action', icon:'⚡' },
-    { name:'Engie Pro', url:'https://www.engie.fr/professionnels', type:'action', icon:'🔋' },
-  ],
-  carbon: [
-    { name:'ADEME · Bilan Carbone', url:'https://agirpourlatransition.ademe.fr/entreprises/demarches-performance/reduire-empreinte-carbone', type:'info', icon:'🏛️' },
-    { name:'Greenly', url:'https://greenly.earth/fr-fr', type:'premium', icon:'🌱' },
-    { name:'Sami · TPE/PME', url:'https://www.sami.eco', type:'action', icon:'📊' },
-  ],
-  waste: [
-    { name:'Ecologic', url:'https://www.ecologic-france.com', type:'action', icon:'♻️' },
-    { name:'Valdelia', url:'https://www.valdelia.org', type:'action', icon:'🪑' },
-    { name:'Citeo', url:'https://www.citeo.com/le-mag/professionnels', type:'info', icon:'📦' },
-  ],
-  mobility: [
-    { name:'ADEME · Mobilité durable', url:'https://agirpourlatransition.ademe.fr/entreprises/demarches-performance/mobilite-durable', type:'info', icon:'🏛️' },
-    { name:'Arval', url:'https://www.arval.fr/solutions-mobilite/vehicules-electriques', type:'action', icon:'🚗' },
-    { name:'Ayvens', url:'https://www.ayvens.com/fr-fr/solutions-de-mobilite/', type:'action', icon:'🚙' },
-  ],
-  procurement: [
-    { name:'ADEME · Achats responsables', url:'https://agirpourlatransition.ademe.fr/entreprises/demarches-performance/achats-responsables', type:'info', icon:'🏛️' },
-    { name:'Label Lucie', url:'https://www.lucie-label.org', type:'premium', icon:'🏅' },
-    { name:'Agence LUCIE', url:'https://www.lucie-label.org/agence-lucie/', type:'action', icon:'✅' },
-  ],
-  hosting: [
-    { name:'Infomaniak · Hébergement vert', url:'https://www.infomaniak.com/fr/hebergement', type:'action', icon:'💚' },
-    { name:'Scaleway', url:'https://www.scaleway.com/fr/', type:'action', icon:'☁️' },
-    { name:'ADEME · Numérique responsable', url:'https://agirpourlatransition.ademe.fr/entreprises/demarches-performance/numerique-responsable', type:'info', icon:'🏛️' },
-  ],
-  // ── SOCIAL ──
-  handicap: [
-    { name:'AGEFIPH', url:'https://www.agefiph.fr/entreprises', type:'info', icon:'🏛️' },
-    { name:'Handiréseau', url:'https://www.handireseau.com', type:'action', icon:'🤝' },
-    { name:'Réseau Gesat', url:'https://www.reseau-gesat.com', type:'action', icon:'🌐' },
-  ],
-  training: [
-    { name:'Mon Compte Formation (CPF)', url:'https://www.moncompteformation.gouv.fr', type:'info', icon:'🏛️' },
-    { name:'OPCO · Trouver le vôtre', url:'https://www.opco.fr', type:'action', icon:'🎓' },
-    { name:'Atlas · Services', url:'https://www.opco-atlas.fr/entreprises', type:'action', icon:'📚' },
-  ],
-  recruitment: [
-    { name:'Indeed · Offres emploi', url:'https://fr.indeed.com/recrutement', type:'action', icon:'🔍' },
-    { name:'Welcome to the Jungle', url:'https://www.welcometothejungle.com/fr/companies', type:'action', icon:'🌿' },
-    { name:'Mozaïk RH', url:'https://www.mozaikrh.com', type:'info', icon:'🌍' },
-  ],
-  health_safety: [
-    { name:'INRS · Prévention', url:'https://www.inrs.fr/entreprise.html', type:'info', icon:'🏛️' },
-    { name:'Malakoff Humanis', url:'https://www.malakoffhumanis.com/entreprises', type:'action', icon:'❤️' },
-    { name:'OPPBTP · BTP', url:'https://www.preventionbtp.fr', type:'info', icon:'🦺' },
-  ],
-  diversity: [
-    { name:'CIDFF · Égalité F/H', url:'https://fncidff.info', type:'info', icon:'⚖️' },
-    { name:'Label Égalité Pro', url:'https://www.egalite-professionnelle.fr', type:'premium', icon:'🏅' },
-    { name:'Défenseur des droits', url:'https://www.defenseurdesdroits.fr/fr/entreprises', type:'info', icon:'🏛️' },
-  ],
-  wellbeing: [
-    { name:'INRS · Bien-être au travail', url:'https://www.inrs.fr/risques/stress.html', type:'info', icon:'🏛️' },
-    { name:'Malakoff Humanis · QVT', url:'https://www.malakoffhumanis.com/entreprises/sante-prevoyance', type:'action', icon:'💙' },
-    { name:'ANACT', url:'https://www.anact.fr/entreprises', type:'info', icon:'🌟' },
-  ],
-  // ── GOUVERNANCE ──
-  rgpd: [
-    { name:'CNIL · Guide TPE/PME', url:'https://www.cnil.fr/fr/tpe-pme', type:'info', icon:'🏛️' },
-    { name:'Didomi', url:'https://www.didomi.io/fr', type:'premium', icon:'🔒' },
-    { name:'Axeptio', url:'https://www.axeptio.eu/fr', type:'action', icon:'✅' },
-  ],
-  ethics: [
-    { name:'AFA · Guide conformité', url:'https://www.agence-francaise-anticorruption.gouv.fr/fr/les-entreprises', type:'info', icon:'🏛️' },
-    { name:'CCI · Éthique des affaires', url:'https://www.cci.fr/ressources/juridique-et-fiscalite/conformite', type:'info', icon:'🏢' },
-    { name:'Transparency International', url:'https://www.transparence-france.org', type:'info', icon:'🔎' },
-  ],
-  strategy: [
-    { name:'Bpifrance · Accompagnement', url:'https://www.bpifrance.fr/nos-solutions/accompagnement', type:'action', icon:'🚀' },
-    { name:'CCI France · Conseil', url:'https://www.cci.fr/services-aux-entreprises/conseil-aux-dirigeants', type:'info', icon:'🏢' },
-    { name:'Réseau Entreprendre', url:'https://www.reseau-entreprendre.org', type:'action', icon:'🤝' },
-  ],
-  financing: [
-    { name:'Bpifrance · Financement', url:'https://www.bpifrance.fr/nos-solutions/financement', type:'action', icon:'💶' },
-    { name:'Caisse des Dépôts', url:'https://www.caissedesdepots.fr/entreprises', type:'action', icon:'🏛️' },
-    { name:'La NEF · Finance éthique', url:'https://www.lanef.com/pro/', type:'premium', icon:'🌱' },
-  ],
-  certification: [
-    { name:'B Lab France · B Corp', url:'https://www.bcorporation.fr', type:'premium', icon:'🏅' },
-    { name:'Label Lucie', url:'https://www.lucie-label.org', type:'premium', icon:'⭐' },
-    { name:'Afnor Engagements', url:'https://www.afnor.org/engagements/', type:'action', icon:'✅' },
-  ],
-};
-
-// Mapping mots-clés → ressources
-function getResourcesForRec(title, pillar, desc) {
-  const text = (title + ' ' + desc).toLowerCase();
-  const p = pillar.toLowerCase();
-
-  // Environnement
-  if (p === 'e') {
-    if (text.match(/énergie|energy|cee|watts|led|kw/)) return RESOURCES_DB.energy;
-    if (text.match(/carbone|carbon|bilan|co2|empreinte|ghg/)) return RESOURCES_DB.carbon;
-    if (text.match(/déchet|waste|tri|recycl|emballage/)) return RESOURCES_DB.waste;
-    if (text.match(/mobilit|transport|véhicul|electric|fleet/)) return RESOURCES_DB.mobility;
-    if (text.match(/achat|fournisseur|sourcing|supplier|procurement/)) return RESOURCES_DB.procurement;
-    if (text.match(/hébergement|hosting|numérique|digital|cloud/)) return RESOURCES_DB.hosting;
-  }
-  // Social
-  if (p === 's') {
-    if (text.match(/handicap|disability|agefiph|gesat/)) return RESOURCES_DB.handicap;
-    if (text.match(/formation|training|opco|cpf|compétence/)) return RESOURCES_DB.training;
-    if (text.match(/recrut|hiring|emploi|embauche|candidate/)) return RESOURCES_DB.recruitment;
-    if (text.match(/santé|sécurité|safety|health|accident|inrs|duer/)) return RESOURCES_DB.health_safety;
-    if (text.match(/égalit|diversity|diversit|femme|genre|gender/)) return RESOURCES_DB.diversity;
-    if (text.match(/bien-être|wellbeing|satisfaction|nps|absentéisme|turnover/)) return RESOURCES_DB.wellbeing;
-  }
-  // Gouvernance
-  if (p === 'g') {
-    if (text.match(/rgpd|gdpr|données|privacy|cookie|cnil/)) return RESOURCES_DB.rgpd;
-    if (text.match(/éthique|ethic|corrupt|conformit|compliance/)) return RESOURCES_DB.ethics;
-    if (text.match(/stratég|roadmap|feuille de route|plan|bpifrance|cci/)) return RESOURCES_DB.strategy;
-    if (text.match(/financ|invest|subvention|crédit|prêt|grant|aid/)) return RESOURCES_DB.financing;
-    if (text.match(/certif|label|iso|b corp|norme/)) return RESOURCES_DB.certification;
-  }
-  // Défaut par pilier
-  if (p === 'e') return RESOURCES_DB.energy;
-  if (p === 's') return RESOURCES_DB.training;
-  return RESOURCES_DB.strategy;
-}
-
-function renderResources(resources) {
-  if (!resources || !resources.length) return '';
-  const currentLang = (typeof lang !== 'undefined') ? lang : 'fr';
-  const chips = resources.map(r =>
-    `<a href="${r.url}" target="_blank" rel="noopener" class="resource-chip ${r.type}">
-      <span class="resource-chip-icon">${r.icon}</span>${r.name}
-    </a>`
-  ).join('');
-  return `<div class="resources-wrap">
-    <div class="resources-label">🔗 ${currentLang === 'fr' ? 'Ressources utiles' : 'Useful resources'}</div>
-    <div class="resources-grid">${chips}</div>
-  </div>`;
-}
 
 // ===== LAUNCH POPUP =====
 function closeLaunchPopup(){
@@ -3410,6 +3268,139 @@ function renderRoadmap(sE,sG,sS){
   });
   h+='</tbody>';
   document.getElementById('rm-tbl').innerHTML=h;
+}
+
+// ===== RESSOURCES UTILES PAR RECOMMANDATION =====
+const RESOURCES_DB = {
+  energy: [
+    { name:'ADEME · Mon parcours énergie', url:'https://monparcourseconomiesdenergie.ademe.fr', type:'info', icon:'🏛️' },
+    { name:'EDF Entreprises', url:'https://entreprises.edf.fr', type:'action', icon:'⚡' },
+    { name:'Engie Pro', url:'https://www.engie.fr/professionnels', type:'action', icon:'🔋' },
+  ],
+  carbon: [
+    { name:'ADEME · Bilan Carbone', url:'https://agirpourlatransition.ademe.fr/entreprises', type:'info', icon:'🏛️' },
+    { name:'Greenly', url:'https://greenly.earth/fr-fr', type:'premium', icon:'🌱' },
+    { name:'Sami · TPE/PME', url:'https://www.sami.eco', type:'action', icon:'📊' },
+  ],
+  waste: [
+    { name:'Ecologic', url:'https://www.ecologic-france.com', type:'action', icon:'♻️' },
+    { name:'Valdelia', url:'https://www.valdelia.org', type:'action', icon:'🪑' },
+    { name:'Citeo', url:'https://www.citeo.com/le-mag/professionnels', type:'info', icon:'📦' },
+  ],
+  mobility: [
+    { name:'ADEME · Mobilité durable', url:'https://agirpourlatransition.ademe.fr/entreprises', type:'info', icon:'🏛️' },
+    { name:'Arval', url:'https://www.arval.fr/solutions-mobilite/vehicules-electriques', type:'action', icon:'🚗' },
+    { name:'Ayvens', url:'https://www.ayvens.com/fr-fr/', type:'action', icon:'🚙' },
+  ],
+  procurement: [
+    { name:'ADEME · Achats responsables', url:'https://agirpourlatransition.ademe.fr/entreprises', type:'info', icon:'🏛️' },
+    { name:'Label Lucie', url:'https://www.lucie-label.org', type:'premium', icon:'🏅' },
+    { name:'Agence LUCIE', url:'https://www.lucie-label.org/agence-lucie/', type:'action', icon:'✅' },
+  ],
+  hosting: [
+    { name:'Infomaniak · Hébergement vert', url:'https://www.infomaniak.com/fr/hebergement', type:'action', icon:'💚' },
+    { name:'Scaleway', url:'https://www.scaleway.com/fr/', type:'action', icon:'☁️' },
+    { name:'ADEME · Numérique responsable', url:'https://agirpourlatransition.ademe.fr/entreprises', type:'info', icon:'🏛️' },
+  ],
+  handicap: [
+    { name:'AGEFIPH', url:'https://www.agefiph.fr/entreprises', type:'info', icon:'🏛️' },
+    { name:'Handiréseau', url:'https://www.handireseau.com', type:'action', icon:'🤝' },
+    { name:'Réseau Gesat', url:'https://www.reseau-gesat.com', type:'action', icon:'🌐' },
+  ],
+  training: [
+    { name:'Mon Compte Formation (CPF)', url:'https://www.moncompteformation.gouv.fr', type:'info', icon:'🏛️' },
+    { name:'OPCO · Trouver le vôtre', url:'https://www.opco.fr', type:'action', icon:'🎓' },
+    { name:'Atlas · Services', url:'https://www.opco-atlas.fr/entreprises', type:'action', icon:'📚' },
+  ],
+  recruitment: [
+    { name:'Indeed · Offres emploi', url:'https://fr.indeed.com/recrutement', type:'action', icon:'🔍' },
+    { name:'Welcome to the Jungle', url:'https://www.welcometothejungle.com/fr/companies', type:'action', icon:'🌿' },
+    { name:'Mozaïk RH', url:'https://www.mozaikrh.com', type:'info', icon:'🌍' },
+  ],
+  health_safety: [
+    { name:'INRS · Prévention', url:'https://www.inrs.fr/entreprise.html', type:'info', icon:'🏛️' },
+    { name:'Malakoff Humanis', url:'https://www.malakoffhumanis.com/entreprises', type:'action', icon:'❤️' },
+    { name:'OPPBTP · BTP', url:'https://www.preventionbtp.fr', type:'info', icon:'🦺' },
+  ],
+  diversity: [
+    { name:'CIDFF · Égalité F/H', url:'https://fncidff.info', type:'info', icon:'⚖️' },
+    { name:'Label Égalité Pro', url:'https://www.egalite-professionnelle.fr', type:'premium', icon:'🏅' },
+    { name:'Défenseur des droits', url:'https://www.defenseurdesdroits.fr/fr/entreprises', type:'info', icon:'🏛️' },
+  ],
+  wellbeing: [
+    { name:'INRS · Bien-être au travail', url:'https://www.inrs.fr/risques/stress.html', type:'info', icon:'🏛️' },
+    { name:'Malakoff Humanis · QVT', url:'https://www.malakoffhumanis.com/entreprises', type:'action', icon:'💙' },
+    { name:'ANACT', url:'https://www.anact.fr/entreprises', type:'info', icon:'🌟' },
+  ],
+  rgpd: [
+    { name:'CNIL · Guide TPE/PME', url:'https://www.cnil.fr/fr/tpe-pme', type:'info', icon:'🏛️' },
+    { name:'Didomi', url:'https://www.didomi.io/fr', type:'premium', icon:'🔒' },
+    { name:'Axeptio', url:'https://www.axeptio.eu/fr', type:'action', icon:'✅' },
+  ],
+  ethics: [
+    { name:'AFA · Guide conformité', url:'https://www.agence-francaise-anticorruption.gouv.fr/fr/les-entreprises', type:'info', icon:'🏛️' },
+    { name:'CCI · Éthique des affaires', url:'https://www.cci.fr', type:'info', icon:'🏢' },
+    { name:'Transparency International', url:'https://www.transparence-france.org', type:'info', icon:'🔎' },
+  ],
+  strategy: [
+    { name:'Bpifrance · Accompagnement', url:'https://www.bpifrance.fr/nos-solutions/accompagnement', type:'action', icon:'🚀' },
+    { name:'CCI France · Conseil', url:'https://www.cci.fr', type:'info', icon:'🏢' },
+    { name:'Réseau Entreprendre', url:'https://www.reseau-entreprendre.org', type:'action', icon:'🤝' },
+  ],
+  financing: [
+    { name:'Bpifrance · Financement', url:'https://www.bpifrance.fr/nos-solutions/financement', type:'action', icon:'💶' },
+    { name:'Caisse des Dépôts', url:'https://www.caissedesdepots.fr/entreprises', type:'action', icon:'🏛️' },
+    { name:'La NEF · Finance éthique', url:'https://www.lanef.com/pro/', type:'premium', icon:'🌱' },
+  ],
+  certification: [
+    { name:'B Lab France · B Corp', url:'https://www.bcorporation.fr', type:'premium', icon:'🏅' },
+    { name:'Label Lucie', url:'https://www.lucie-label.org', type:'premium', icon:'⭐' },
+    { name:'Afnor Engagements', url:'https://www.afnor.org/engagements/', type:'action', icon:'✅' },
+  ],
+};
+
+function getResourcesForRec(title, pillar, desc) {
+  const text = (title + ' ' + (desc||'')).toLowerCase();
+  const p = (pillar||'').toLowerCase();
+  if (p === 'e') {
+    if (text.match(/énergie|energy|cee|watts|led|kw/)) return RESOURCES_DB.energy;
+    if (text.match(/carbone|carbon|bilan|co2|empreinte|ghg/)) return RESOURCES_DB.carbon;
+    if (text.match(/déchet|waste|tri|recycl|emballage/)) return RESOURCES_DB.waste;
+    if (text.match(/mobilit|transport|véhicul|electric|fleet/)) return RESOURCES_DB.mobility;
+    if (text.match(/achat|fournisseur|sourcing|supplier|procurement/)) return RESOURCES_DB.procurement;
+    if (text.match(/hébergement|hosting|numérique|digital|cloud/)) return RESOURCES_DB.hosting;
+    return RESOURCES_DB.energy;
+  }
+  if (p === 's') {
+    if (text.match(/handicap|disability|agefiph|gesat/)) return RESOURCES_DB.handicap;
+    if (text.match(/formation|training|opco|cpf|compétence/)) return RESOURCES_DB.training;
+    if (text.match(/recrut|hiring|emploi|embauche|candidate/)) return RESOURCES_DB.recruitment;
+    if (text.match(/santé|sécurité|safety|health|accident|inrs|duer/)) return RESOURCES_DB.health_safety;
+    if (text.match(/égalit|diversity|diversit|femme|genre|gender/)) return RESOURCES_DB.diversity;
+    return RESOURCES_DB.wellbeing;
+  }
+  if (p === 'g') {
+    if (text.match(/rgpd|gdpr|données|privacy|cookie|cnil/)) return RESOURCES_DB.rgpd;
+    if (text.match(/éthique|ethic|corrupt|conformit|compliance/)) return RESOURCES_DB.ethics;
+    if (text.match(/financ|invest|subvention|crédit|prêt|grant/)) return RESOURCES_DB.financing;
+    if (text.match(/certif|label|iso|b corp|norme/)) return RESOURCES_DB.certification;
+    return RESOURCES_DB.strategy;
+  }
+  return RESOURCES_DB.strategy;
+}
+
+function renderResources(resources) {
+  if (!resources || !resources.length) return '';
+  const currentLang = (typeof lang !== 'undefined') ? lang : 'fr';
+  const chips = resources.map(r =>
+    `<a href="${r.url}" target="_blank" rel="noopener" class="resource-chip ${r.type}">
+      <span class="resource-chip-icon">${r.icon}</span>${r.name}
+    </a>`
+  ).join('');
+  return `<div class="resources-wrap">
+    <div class="resources-label">🔗 ${currentLang === 'fr' ? 'Ressources utiles' : 'Useful resources'}</div>
+    <div class="resources-grid">${chips}</div>
+  </div>`;
 }
 
 // ===== INIT =====
