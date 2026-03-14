@@ -1635,13 +1635,14 @@ function getResourcesForRec(title, pillar, desc) {
 
 function renderResources(resources) {
   if (!resources || !resources.length) return '';
+  const currentLang = (typeof lang !== 'undefined') ? lang : 'fr';
   const chips = resources.map(r =>
     `<a href="${r.url}" target="_blank" rel="noopener" class="resource-chip ${r.type}">
       <span class="resource-chip-icon">${r.icon}</span>${r.name}
     </a>`
   ).join('');
   return `<div class="resources-wrap">
-    <div class="resources-label">🔗 ${lang === 'fr' ? 'Ressources utiles' : 'Useful resources'}</div>
+    <div class="resources-label">🔗 ${currentLang === 'fr' ? 'Ressources utiles' : 'Useful resources'}</div>
     <div class="resources-grid">${chips}</div>
   </div>`;
 }
