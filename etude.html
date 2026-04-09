@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ═══════════════════════════════════════════════════
+       SEO & Open Graph — LIA' ESG — AuroreAD
+  ════════════════════════════════════════════════════ -->
+  <title>LIA' ESG — Étude de marché | AuroreAD</title>
+  <meta name="description" content="Participez à l'étude de marché LIA' ESG par AuroreAD. Votre avis contribue à façonner l'avenir du reporting ESG intelligent." />
+
+  <!-- Open Graph (LinkedIn / Facebook / WhatsApp) -->
+  <meta property="og:type"         content="website" />
+  <meta property="og:url"          content="https://diawalioune-collab.github.io/lia-esg/etude.html" />
+  <meta property="og:title"        content="LIA' ESG — Étude de marché | AuroreAD" />
+  <meta property="og:description"  content="Participez à l'étude de marché LIA' ESG par AuroreAD. Votre avis contribue à façonner l'avenir du reporting ESG intelligent." />
+  <meta property="og:image"        content="https://diawalioune-collab.github.io/lia-esg/lia-og-image.jpg" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt"    content="LIA' — Copilote financier ESG & transition durable, par AuroreAD" />
+  <meta property="og:locale"       content="fr_FR" />
+  <meta property="og:site_name"    content="AuroreAD" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="LIA' ESG — Étude de marché | AuroreAD" />
+  <meta name="twitter:description" content="Participez à l'étude de marché LIA' ESG par AuroreAD." />
+  <meta name="twitter:image"       content="https://diawalioune-collab.github.io/lia-esg/lia-og-image.jpg" />
+
+  <!-- Redirection automatique -->
+  <meta http-equiv="refresh" content="3;url=https://docs.google.com/forms/d/1D-uau2yQGLyrxkzbbsF0wBbX5Ebr2zW6ffnoQosMKRA/viewform" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:    #0d1625;
+      --bg2:   #111d2e;
+      --border: rgba(255,255,255,.08);
+      --gold:  #c9a84c;
+      --gold2: #e8c96a;
+      --white: #f0f4ff;
+      --muted: #7e93b0;
+      --esg-e: #2e7d5e;
+      --esg-s: #1a5fa8;
+      --esg-g: #6b3fa0;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle at 0% 0%, rgba(201,168,76,.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      max-width: 680px;
+      width: 100%;
+      overflow: hidden;
+      animation: rise .55s cubic-bezier(.22,.68,0,1.2) both;
+      box-shadow: 0 32px 80px rgba(0,0,0,.55);
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-topline {
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), var(--gold2) 60%, transparent);
+    }
+
+    .card-body {
+      display: flex;
+    }
+
+    .card-bar {
+      width: 3px;
+      flex-shrink: 0;
+      background: linear-gradient(180deg, var(--gold), var(--gold2) 60%, transparent);
+      margin: 2.4rem 0 2.4rem 2rem;
+      border-radius: 2px;
+    }
+
+    .card-content {
+      padding: 2.4rem 2.4rem 2.4rem 1.6rem;
+      flex: 1;
+    }
+
+    .lia-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 2.8rem;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: .3rem;
+    }
+
+    .lia-sub {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1.3;
+    }
+    .lia-sub em { font-style: italic; color: rgba(240,244,255,.75); }
+
+    .lia-desc {
+      font-size: .88rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: .9rem 0 1.1rem;
+      border-top: 1px solid var(--border);
+      padding-top: .9rem;
+    }
+
+    .esg-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+      margin-bottom: 1.4rem;
+    }
+    .esg-pill {
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+      padding: .32rem .85rem;
+      border-radius: 3px;
+      color: #fff;
+    }
+    .esg-pill.e { background: var(--esg-e); }
+    .esg-pill.s { background: var(--esg-s); }
+    .esg-pill.g { background: var(--esg-g); }
+
+    .etude-intro {
+      font-size: .88rem;
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 1.6rem;
+      padding: 1rem 1.1rem;
+      background: rgba(201,168,76,.05);
+      border-left: 2px solid var(--gold);
+      border-radius: 0 3px 3px 0;
+    }
+    .etude-intro strong { color: var(--white); }
+
+    .progress-wrap {
+      background: rgba(255,255,255,.07);
+      border-radius: 2px;
+      height: 3px;
+      overflow: hidden;
+      margin-bottom: .7rem;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold2));
+      border-radius: 2px;
+      animation: fill 3s linear forwards;
+    }
+    @keyframes fill { from { width:0 } to { width:100% } }
+
+    .redirect-txt {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 1.6rem;
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #0d1625;
+      font-weight: 700;
+      font-size: .88rem;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      padding: .8rem 2rem;
+      border-radius: 3px;
+      transition: filter .2s, transform .15s;
+    }
+    .btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .9rem 2.4rem;
+      border-top: 1px solid var(--border);
+      font-size: .72rem;
+      color: var(--muted);
+      letter-spacing: .06em;
+    }
+    .card-footer a { color: var(--muted); text-decoration: none; }
+    .card-footer a:hover { color: var(--gold); }
+
+    @media (max-width: 520px) {
+      .lia-title { font-size: 2rem; }
+      .card-bar  { margin: 1.6rem 0 1.6rem 1.2rem; }
+      .card-content { padding: 1.6rem 1.4rem 1.6rem 1rem; }
+      .card-footer { flex-direction: column; gap: .4rem; text-align: center; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <div class="card-topline"></div>
+
+    <div class="card-body">
+      <div class="card-bar"></div>
+
+      <div class="card-content">
+        <div class="lia-title">LIA'</div>
+        <div class="lia-sub">Copilote financier ESG<br /><em>&amp; transition durable</em></div>
+
+        <p class="lia-desc">
+          SaaS d'aide à la décision financière orientée économie durable · Données ESG réelles
+        </p>
+
+        <div class="esg-row">
+          <span class="esg-pill e">Environnement</span>
+          <span class="esg-pill s">Social</span>
+          <span class="esg-pill g">Gouvernance</span>
+        </div>
+
+        <div class="etude-intro">
+          <strong>Étude de marché — votre avis compte.</strong><br />
+          Nous préparons le lancement de LIA' et souhaitons comprendre vos besoins réels en matière de reporting ESG, de financement durable et d'aide à la décision. Moins de 5 minutes.
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-bar"></div>
+        </div>
+        <p class="redirect-txt">Redirection vers le questionnaire dans 3 secondes…</p>
+
+        <a class="btn"
+           href="https://docs.google.com/forms/d/1D-uau2yQGLyrxkzbbsF0wBbX5Ebr2zW6ffnoQosMKRA/viewform"
+           rel="noopener noreferrer">
+          Accéder au questionnaire →
+        </a>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <span>AuroreAD · FINTECH ESG · CABINET DE CONSEIL</span>
+      <a href="https://lia.auroreadconsult.com" target="_blank" rel="noopener">lia.auroreadconsult.com</a>
+    </div>
+  </div>
+</body>
+</html>
